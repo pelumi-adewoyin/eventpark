@@ -4,22 +4,7 @@ import { ArrowRight, Phone, Shield, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { auth as authApi } from '../../lib/api';
 import toast from 'react-hot-toast';
-
-function Logo() {
-  return (
-    <Link to="/" className="inline-flex items-center gap-2.5 justify-center mb-6">
-      <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="14" height="14" rx="3" fill="#4B55F5" />
-        <rect x="18" width="14" height="14" rx="3" fill="#F25122" />
-        <rect y="18" width="14" height="14" rx="3" fill="#4B55F5" opacity="0.4" />
-        <rect x="18" y="18" width="14" height="14" rx="3" fill="#4B55F5" />
-      </svg>
-      <span className="text-2xl font-extrabold text-ep-navy tracking-tight">
-        Event<span className="text-brand-600">park</span>
-      </span>
-    </Link>
-  );
-}
+import { EventParkLogo } from '../../components/Logo';
 
 export default function Login({ type = 'personal' }) {
   const isB = type === 'business';
@@ -74,15 +59,7 @@ export default function Login({ type = 'personal' }) {
         <div className="absolute top-1/3 right-0 w-64 h-64 bg-ep-orange rounded-full opacity-10 blur-3xl" />
 
         <div className="relative">
-          <Link to="/" className="flex items-center gap-2.5">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="14" height="14" rx="3" fill="#4B55F5" />
-              <rect x="18" width="14" height="14" rx="3" fill="#F25122" />
-              <rect y="18" width="14" height="14" rx="3" fill="#4B55F5" opacity="0.4" />
-              <rect x="18" y="18" width="14" height="14" rx="3" fill="#4B55F5" />
-            </svg>
-            <span className="text-xl font-bold text-white tracking-tight">Eventpark</span>
-          </Link>
+          <EventParkLogo light size="md" />
         </div>
 
         <div className="relative">
@@ -108,7 +85,7 @@ export default function Login({ type = 'personal' }) {
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="lg:hidden mb-4"><Logo /></div>
+            <div className="lg:hidden mb-6 flex justify-center"><EventParkLogo size="md" /></div>
             <h1 className="text-3xl font-extrabold text-ep-navy">
               {step === 'phone' ? 'Welcome back' : 'Check your phone'}
             </h1>
