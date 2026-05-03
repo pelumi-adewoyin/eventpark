@@ -57,8 +57,8 @@ const PANELS = {
 
 function ProgressBar({ group }) {
   return (
-    <div className="mb-8">
-      <div className="flex justify-between mb-2">
+    <div className="mb-6 sm:mb-8">
+      <div className="flex justify-between mb-1.5">
         <span className="text-xs font-semibold text-gray-400">Step {group} of 5</span>
         <span className="text-xs text-gray-400">{group * 20}%</span>
       </div>
@@ -194,12 +194,12 @@ function OTPBoxes({ value, onChange, onComplete }) {
   };
 
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-1.5 sm:gap-2">
       {digits.map((d, i) => (
         <input key={i} ref={el => refs.current[i] = el}
           type="text" inputMode="numeric" maxLength={1} value={d.trim()} onChange={() => {}}
           onKeyDown={e => handle(i, e)} onPaste={onPaste}
-          className="flex-1 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-400 transition-all" />
+          className="flex-1 min-w-0 h-11 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" />
       ))}
     </div>
   );
@@ -240,8 +240,8 @@ function StepEmail({ onNext }) {
   return (
     <div>
       <ProgressBar group={1} />
-      <h1 className="text-2xl font-extrabold text-ep-navy mb-1">Create your account</h1>
-      <p className="text-sm text-gray-400 mb-8">We'll start with your email. No spam, ever.</p>
+      <h1 className="text-xl sm:text-2xl font-extrabold text-ep-navy mb-1">Create your account</h1>
+      <p className="text-sm text-gray-400 mb-6 sm:mb-8">We'll start with your email. No spam, ever.</p>
       <div className="space-y-4">
         <Inp label="Email address" type="email" placeholder="you@email.com" value={email} error={error}
           onChange={e => { setEmail(e.target.value); setError(''); }}
@@ -376,7 +376,7 @@ function StepName({ data, onNext, onBack }) {
       <h1 className="text-2xl font-extrabold text-ep-navy mb-1">What should we call you?</h1>
       <p className="text-sm text-gray-400 mb-8">This is how collaborators and guests will see you.</p>
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
           <Inp label="First name" placeholder="Ada" value={firstName} onChange={e => setFirst(e.target.value)} autoFocus />
           <Inp label="Last name" placeholder="Okonkwo" value={lastName} onChange={e => setLast(e.target.value)} />
         </div>
@@ -566,7 +566,7 @@ function StepPubBasics({ onNext, onBack }) {
         </div>
         <div>
           <Lbl>How often do you run this?</Lbl>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {freqs.map(f => (
               <button key={f} type="button" onClick={() => set('frequency', f)}
                 className={`py-2.5 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${form.frequency === f ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
@@ -694,12 +694,12 @@ function StepPlanBiz({ onNext, onBack }) {
         <Inp label="Business name" placeholder="Amaka Events" value={form.business_name} onChange={e => set('business_name', e.target.value)} autoFocus />
         <div>
           <Lbl>Business size</Lbl>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {types.map(t => (
               <button key={t.id} type="button" onClick={() => set('biz_type', t.id)}
-                className={`p-3 rounded-xl border-2 text-center transition-all ${form.biz_type === t.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border-2 text-left sm:text-center transition-all flex sm:block items-center gap-3 ${form.biz_type === t.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <div className="text-xs font-bold text-ep-navy">{t.label}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{t.sub}</div>
+                <div className="text-xs text-gray-400 mt-0 sm:mt-0.5">{t.sub}</div>
               </button>
             ))}
           </div>
@@ -855,11 +855,11 @@ function StepPlanTeam({ onNext }) {
       <p className="text-sm text-gray-400 mb-8">Add up to 5 collaborators — they'll get an invite link and don't need to do KYC.</p>
       <div className="space-y-3 mb-5">
         {members.map((m, i) => (
-          <div key={i} className="grid grid-cols-3 gap-2">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-50 rounded-xl">
             <input placeholder="Name" value={m.name} onChange={e => update(i, 'name', e.target.value)}
-              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400" />
             <input placeholder="Email or phone" value={m.contact} onChange={e => update(i, 'contact', e.target.value)}
-              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400" />
             <select value={m.role} onChange={e => update(i, 'role', e.target.value)}
               className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400">
               <option value="">Role…</option>
@@ -940,7 +940,7 @@ function StepCorpRole({ data, onNext, onBack }) {
       <div className="space-y-5">
         <div>
           <Lbl>Your role</Lbl>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {corpRoles.map(r => (
               <button key={r} type="button" onClick={() => set('user_role', r)}
                 className={`py-2.5 px-3 rounded-xl border-2 text-xs font-semibold text-left transition-all ${form.user_role === r ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
@@ -975,9 +975,9 @@ function StepCorpRole({ data, onNext, onBack }) {
           <div>
             <Lbl>Approver emails <span className="text-gray-400 font-normal">(optional, up to 3)</span></Lbl>
             {form.approvers.map((a, i) => (
-              <div key={i} className="flex gap-2 mb-2">
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                 <input placeholder="approver@company.com" value={a.email} onChange={e => updateApprover(i, 'email', e.target.value)}
-                  className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                  className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 <select value={a.role} onChange={e => updateApprover(i, 'role', e.target.value)}
                   className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400">
                   <option value="">Role…</option>
@@ -1058,9 +1058,9 @@ function StepCorpTeam({ onNext }) {
       <p className="text-sm text-gray-400 mb-8">Add CFO, comms lead, exec assistants. They'll get invite links — no KYC needed for them.</p>
       <div className="space-y-3 mb-5">
         {members.map((m, i) => (
-          <div key={i} className="grid grid-cols-3 gap-2">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-50 rounded-xl">
             <input placeholder="Email" value={m.email} onChange={e => update(i, 'email', e.target.value)}
-              className="col-span-3 sm:col-span-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400" />
             <select value={m.role} onChange={e => update(i, 'role', e.target.value)}
               className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400">
               <option value="">Role…</option>{roles.map(r => <option key={r}>{r}</option>)}
@@ -1158,7 +1158,7 @@ export default function Signup() {
   const CurrentStep = STEP_MAP[step] || StepEmail;
 
   return (
-    <div className="min-h-screen bg-ep-blue-light flex pt-16">
+    <div className="min-h-screen bg-ep-blue-light flex pt-16 overflow-x-hidden">
       {/* Left brand panel */}
       <div className="hidden lg:flex flex-col justify-between px-12 py-14 bg-ep-navy relative overflow-hidden w-[380px] flex-shrink-0">
         <div className="absolute inset-0 dot-pattern-white opacity-20" />
@@ -1179,9 +1179,9 @@ export default function Signup() {
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-start justify-center px-4 sm:px-8 py-10 overflow-y-auto">
+      <div className="flex-1 min-w-0 flex items-start justify-center px-4 sm:px-6 py-6 sm:py-10">
         <div className="w-full max-w-lg">
-          <div className="flex justify-center mb-8 lg:hidden"><EventParkLogo size="md" /></div>
+          <div className="flex justify-center mb-6 lg:hidden"><EventParkLogo size="md" /></div>
           <CurrentStep data={data} onNext={advance} onBack={goBack} onFinish={finish} />
         </div>
       </div>

@@ -33,12 +33,12 @@ function OTPBoxes({ value, onChange, onComplete }) {
   };
 
   return (
-    <div className="flex gap-2.5">
+    <div className="flex gap-1.5 sm:gap-2">
       {digits.map((d, i) => (
         <input key={i} ref={el => refs.current[i] = el}
           type="text" inputMode="numeric" maxLength={1} value={d.trim()} onChange={() => {}}
           onKeyDown={e => handle(i, e)} onPaste={onPaste}
-          className="flex-1 h-14 text-center text-xl font-bold border-2 border-gray-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-400 transition-all" />
+          className="flex-1 min-w-0 h-11 sm:h-14 text-center text-lg sm:text-xl font-bold border-2 border-gray-200 rounded-lg sm:rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-inset focus:ring-brand-400 transition-all" />
       ))}
     </div>
   );
@@ -98,7 +98,7 @@ export default function Login({ type = 'personal' }) {
   };
 
   return (
-    <div className="min-h-screen bg-ep-blue-light flex pt-16">
+    <div className="min-h-screen bg-ep-blue-light flex pt-16 overflow-x-hidden">
       {/* Left brand panel */}
       <div className="hidden lg:flex flex-col justify-between px-12 py-14 bg-ep-navy relative overflow-hidden w-[420px] flex-shrink-0">
         <div className="absolute inset-0 dot-pattern-white opacity-20" />
@@ -127,7 +127,7 @@ export default function Login({ type = 'personal' }) {
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex-1 min-w-0 flex items-start justify-center px-4 sm:px-6 py-8 sm:py-12">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
