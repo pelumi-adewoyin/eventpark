@@ -19,7 +19,7 @@ import VendorPortal from './pages/VendorPortal';
 // Auth
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
-import Onboarding from './pages/auth/Onboarding';
+import { Navigate } from 'react-router-dom';
 
 // Dashboards
 import DIYDashboard from './pages/dashboard/DIYDashboard';
@@ -77,10 +77,10 @@ function AppContent() {
 
         {/* Auth */}
         <Route path="/login" element={<Login type="personal" />} />
-        <Route path="/signup" element={<Signup type="personal" />} />
         <Route path="/business/login" element={<Login type="business" />} />
-        <Route path="/business/signup" element={<Signup type="business" />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/business/signup" element={<Navigate to="/signup" replace />} />
+        <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
 
         {/* Dashboards — no top nav, have their own sidebar */}
         <Route path="/dashboard" element={<DIYDashboard />} />
