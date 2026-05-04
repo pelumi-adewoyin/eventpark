@@ -36,6 +36,8 @@ import CorporateDashboard from './pages/dashboard/CorporateDashboard';
 import CreateEvent from './pages/events/CreateEvent';
 import WalletPage from './pages/wallet/Wallet';
 import CheckIn from './pages/checkin/CheckIn';
+import WishlistCreator from './pages/wishlist/WishlistCreator';
+import PublicWishlist from './pages/wishlist/PublicWishlist';
 
 function Layout({ children, hideFooter = false, hideNav = false }) {
   return (
@@ -106,6 +108,10 @@ function AppContent() {
 
         {/* Wallet */}
         <Route path="/wallet" element={<Layout hideFooter><WalletPage /></Layout>} />
+
+        {/* Wishlist */}
+        <Route path="/wishlist/create" element={<WishlistCreator />} />
+        <Route path="/wish/:slug" element={<Layout hideFooter><PublicWishlist /></Layout>} />
 
         {/* Day-of check-in */}
         <Route path="/checkin/:id" element={<CheckIn />} />
