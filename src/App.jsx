@@ -22,7 +22,13 @@ import Signup from './pages/auth/Signup';
 import { Navigate } from 'react-router-dom';
 
 // Dashboards
-import DIYDashboard from './pages/dashboard/DIYDashboard';
+import DashboardLayout from './pages/dashboard/DashboardLayout';
+import DashboardHome from './pages/dashboard/DashboardHome';
+import DashboardEvents from './pages/dashboard/DashboardEvents';
+import DashboardTodos from './pages/dashboard/DashboardTodos';
+import DashboardWishlist from './pages/dashboard/DashboardWishlist';
+import DashboardCollaborators from './pages/dashboard/DashboardCollaborators';
+import DashboardSettings from './pages/dashboard/DashboardSettings';
 import PlannerDashboard from './pages/dashboard/PlannerDashboard';
 import CorporateDashboard from './pages/dashboard/CorporateDashboard';
 
@@ -82,8 +88,16 @@ function AppContent() {
         <Route path="/business/signup" element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
 
-        {/* Dashboards — no top nav, have their own sidebar */}
-        <Route path="/dashboard" element={<DIYDashboard />} />
+        {/* DIY Dashboard — nested routes under shared layout */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<DashboardHome />} />
+          <Route path="events" element={<DashboardEvents />} />
+          <Route path="todos" element={<DashboardTodos />} />
+          <Route path="wishlist" element={<DashboardWishlist />} />
+          <Route path="collaborators" element={<DashboardCollaborators />} />
+          <Route path="settings" element={<DashboardSettings />} />
+        </Route>
+
         <Route path="/planner" element={<PlannerDashboard />} />
         <Route path="/corporate" element={<CorporateDashboard />} />
 
