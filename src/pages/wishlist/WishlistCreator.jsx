@@ -537,11 +537,15 @@ function PublishedStep({ navigate, slug }) {
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-4">
-          <button className="flex items-center justify-center gap-2 p-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold transition-colors">
+          <button
+            onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Check out our wishlist and pick a gift 🎁\nhttps://eventpark.ng/wish/${slug}`)}`, '_blank')}
+            className="flex items-center justify-center gap-2 p-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold transition-colors">
             📱 WhatsApp
           </button>
-          <button className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-bold transition-colors">
-            📸 Instagram Story
+          <button
+            onClick={() => { navigator.clipboard?.writeText(`https://eventpark.ng/wish/${slug}`).catch(()=>{}); toast.success('Link copied — paste into Instagram!'); }}
+            className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl text-sm font-bold transition-colors">
+            📸 Copy for Insta
           </button>
         </div>
 
@@ -575,6 +579,96 @@ function PublishedStep({ navigate, slug }) {
       <Link to={`/wish/${slug}`} className="block text-sm text-brand-600 hover:underline font-medium">
         View public page →
       </Link>
+    </div>
+  );
+}
+
+// ─── Address Capture Modal ────────────────────────────────────────────────────
+function AddressModal({ onSave, onSkip }) {
+  const [f, setF] = useState({ name: '', street: '', city: '', state: '', phone: '' });
+  const [err, setErr] = useState({});
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const validate = () => {
+    const e = {};
+    if (!f.name.trim()) e.name = 'Required';
+    if (!f.street.trim()) e.street = 'Required';
+    if (!f.city.trim()) e.city = 'Required';
+    if (!f.state.trim()) e.state = 'Required';
+    return e;
+  };
+
+  const handleSave = () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErr(e); return; }
+    onSave(f);
+  };
+
+  const STATES = ['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-ep-navy to-brand-800 px-6 pt-6 pb-5">
+          <div className="text-3xl mb-2">📦</div>
+          <h3 className="text-lg font-extrabold text-white mb-1">Add a delivery address</h3>
+          <p className="text-white/60 text-sm">Guests who buy physical gifts need to know where to ship them.</p>
+        </div>
+        <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Recipient name <span className="text-red-400">*</span></label>
+            <input value={f.name} onChange={e => { set('name', e.target.value); setErr(er => ({ ...er, name: '' })); }}
+              placeholder="Full name of recipient"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 ${err.name ? 'border-red-300' : 'border-gray-200'}`} />
+            {err.name && <p className="text-xs text-red-500 mt-0.5">{err.name}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Street address <span className="text-red-400">*</span></label>
+            <input value={f.street} onChange={e => { set('street', e.target.value); setErr(er => ({ ...er, street: '' })); }}
+              placeholder="House / flat number, street name"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 ${err.street ? 'border-red-300' : 'border-gray-200'}`} />
+            {err.street && <p className="text-xs text-red-500 mt-0.5">{err.street}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">City / LGA <span className="text-red-400">*</span></label>
+              <input value={f.city} onChange={e => { set('city', e.target.value); setErr(er => ({ ...er, city: '' })); }}
+                placeholder="e.g. Victoria Island"
+                className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 ${err.city ? 'border-red-300' : 'border-gray-200'}`} />
+              {err.city && <p className="text-xs text-red-500 mt-0.5">{err.city}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">State <span className="text-red-400">*</span></label>
+              <select value={f.state} onChange={e => { set('state', e.target.value); setErr(er => ({ ...er, state: '' })); }}
+                className={`w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white ${err.state ? 'border-red-300' : 'border-gray-200'}`}>
+                <option value="">Select</option>
+                {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              {err.state && <p className="text-xs text-red-500 mt-0.5">{err.state}</p>}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Phone <span className="text-gray-400 font-normal">(optional — for delivery calls)</span></label>
+            <input value={f.phone} onChange={e => set('phone', e.target.value)} type="tel"
+              placeholder="+234 800 000 0000"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+          </div>
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+            <span className="flex-shrink-0">🔒</span>
+            <span>Your address is only shared with guests after they purchase a gift and only for delivery purposes.</span>
+          </div>
+        </div>
+        <div className="px-6 pb-6 space-y-2">
+          <button onClick={handleSave}
+            className="w-full bg-ep-navy hover:bg-ep-navy-light text-white font-bold py-3 rounded-2xl text-sm transition-colors">
+            Save address & continue
+          </button>
+          <button onClick={onSkip}
+            className="w-full py-2.5 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            Skip for now (cash gifts only)
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -642,11 +736,25 @@ export default function WishlistCreator() {
   const [continueCtx, setContinueCtx] = useState({ doneType: '', nextType: '' });
   const [meta, setMeta] = useState({ headline: '', message: '', color: '#6366f1', showContributors: true, allowAnonymous: true });
   const [publishedSlug, setPublishedSlug] = useState('');
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [pendingFlowStart, setPendingFlowStart] = useState(false);
 
   const allItems = [...cashItems, ...giftItems];
   const progIdx = stepToProgress(step);
 
+  const needsAddress = selectedTypes.includes('gift_item') || selectedTypes.includes('store');
+
   function startFlow() {
+    const hasAddress = !!localStorage.getItem('ep_delivery_address');
+    if (needsAddress && !hasAddress) {
+      setPendingFlowStart(true);
+      setShowAddressModal(true);
+      return;
+    }
+    _startFlow();
+  }
+
+  function _startFlow() {
     const ordered = TYPE_ORDER.filter(t => selectedTypes.includes(t));
     const [first, ...rest] = ordered;
     setPendingTypes(rest);
@@ -695,8 +803,31 @@ export default function WishlistCreator() {
     else if (step === 'published') navigate('/dashboard/wishlist');
   }
 
+  function handleAddressSave(address) {
+    try { localStorage.setItem('ep_delivery_address', JSON.stringify(address)); } catch {}
+    setShowAddressModal(false);
+    setPendingFlowStart(false);
+    _startFlow();
+  }
+
+  function handleAddressSkip() {
+    setShowAddressModal(false);
+    setPendingFlowStart(false);
+    const onlyCash = selectedTypes.filter(t => t !== 'gift_item' && t !== 'store');
+    if (onlyCash.length === 0) {
+      navigate('/dashboard/wishlist');
+      return;
+    }
+    // Proceed but only with cash_gift flow
+    const ordered = TYPE_ORDER.filter(t => onlyCash.includes(t));
+    const [first, ...rest] = ordered;
+    setPendingTypes(rest);
+    goToFirstFor(first);
+  }
+
   function publish() {
-    const headline = meta.headline.trim() || "My Event Wishlist";
+    const firstItemName = allItems[0]?.title || allItems[0]?.name || '';
+    const headline = meta.headline.trim() || firstItemName || 'My Wishlist';
     const slug = generateSlug(headline);
     const wishlistData = {
       slug,
@@ -783,7 +914,7 @@ export default function WishlistCreator() {
               <CashGiftForm
                 queue={cashItems}
                 onAdd={item => setCashItems(p => [...p, item])}
-                onDone={() => finishType('cash_gift', cashItems.length + 1)}
+                onDone={() => finishType('cash_gift', cashItems.length)}
                 hasMore={hasNextType}
                 nextType={nextType}
               />
@@ -796,7 +927,7 @@ export default function WishlistCreator() {
                 fetched={fetchedData}
                 queue={giftItems}
                 onAdd={item => setGiftItems(p => [...p, item])}
-                onDone={() => finishType('gift_item', giftItems.length + 1)}
+                onDone={() => finishType('gift_item', giftItems.length)}
                 onReplaceUrl={() => setStep('gift_url')}
                 hasMore={hasNextType}
                 nextType={nextType}
@@ -829,6 +960,13 @@ export default function WishlistCreator() {
           nextType={continueCtx.nextType}
           onContinue={proceedToNext}
           onFinish={finishHere}
+        />
+      )}
+
+      {showAddressModal && (
+        <AddressModal
+          onSave={handleAddressSave}
+          onSkip={handleAddressSkip}
         />
       )}
     </div>

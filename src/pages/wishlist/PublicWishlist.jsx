@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { X, Loader2, Check, ArrowRight, ExternalLink, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -456,12 +456,12 @@ function ItemCard({ item, onSendMoney, onReserve, onBuyNow }) {
 // ─── Public Wishlist Page ─────────────────────────────────────────────────────
 export default function PublicWishlist() {
   const { slug } = useParams();
-  const [wishlist] = useState(() => {
+  const wishlist = useMemo(() => {
     try {
       const stored = localStorage.getItem(`wishlist_${slug}`);
       return stored ? JSON.parse(stored) : MOCK_WISHLIST;
     } catch { return MOCK_WISHLIST; }
-  });
+  }, [slug]);
 
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null); // { type: 'cash'|'reserve'|'buy', item }
