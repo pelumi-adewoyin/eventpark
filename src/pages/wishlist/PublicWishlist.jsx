@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { X, Loader2, Check, ArrowRight, ExternalLink, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const WISHLIST = {
+const MOCK_WISHLIST = {
   slug: 'tunde-bola-dec2026',
   headline: "Tunde & Bola's Wedding Wishlist",
   message: "Thanks for celebrating with us! If you'd like to send a gift, here's what would mean a lot to us. Every contribution is deeply appreciated 💕",
@@ -47,7 +47,7 @@ function Modal({ children, onClose }) {
 }
 
 // ─── Cash Gift Payment Flow ───────────────────────────────────────────────────
-function CashGiftModal({ item, onClose }) {
+function CashGiftModal({ item, onClose, hostName, headline }) {
   const [step, setStep] = useState('p1');
   const [f, setF] = useState({ name: '', email: '', amount: item.crowdgifting ? String(item.minContrib) : String(item.amount - item.raised), anonymous: false, note: '' });
   const [paying, setPaying] = useState(false);
@@ -73,7 +73,7 @@ function CashGiftModal({ item, onClose }) {
     <div className="text-center py-4">
       <div className="text-5xl mb-4">🎉</div>
       <h3 className="text-xl font-extrabold text-gray-900 mb-2">Gift received — thank you!</h3>
-      <p className="text-gray-400 text-sm mb-2">Your ₦{amt.toLocaleString()} is on its way to {WISHLIST.hosts[0].name.split(' ')[0]}.</p>
+      <p className="text-gray-400 text-sm mb-2">Your ₦{amt.toLocaleString()} is on its way to {hostName}.</p>
       {item.crowdgifting && (
         <div className="my-4">
           <div className="flex justify-between text-xs text-gray-500 mb-1.5">
@@ -99,13 +99,13 @@ function CashGiftModal({ item, onClose }) {
     <div>
       <h3 className="text-lg font-extrabold text-gray-900 mb-1">Confirm and pay</h3>
       <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-2.5 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Going to</span><span className="font-semibold text-right">{WISHLIST.headline}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Going to</span><span className="font-semibold text-right">{headline}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">Your name</span><span className="font-semibold">{f.anonymous ? 'Anonymous' : f.name}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">Gift amount</span><span className="font-semibold">₦{amt.toLocaleString()}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">Processing fee</span><span className="font-semibold text-gray-400">₦{fee.toLocaleString()}</span></div>
         <div className="border-t border-gray-200 pt-2.5 flex justify-between font-extrabold text-gray-900"><span>Total to pay</span><span>₦{total.toLocaleString()}</span></div>
       </div>
-      <p className="text-xs text-gray-400 mb-5">Fees are paid by you so 100% of your gift amount goes to {WISHLIST.hosts[0].name.split(' ')[0]}.</p>
+      <p className="text-xs text-gray-400 mb-5">Fees are paid by you so 100% of your gift amount goes to {hostName}.</p>
       <div className="space-y-2">
         <button onClick={handlePay} disabled={paying}
           className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-2xl text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-60">
@@ -455,10 +455,20 @@ function ItemCard({ item, onSendMoney, onReserve, onBuyNow }) {
 
 // ─── Public Wishlist Page ─────────────────────────────────────────────────────
 export default function PublicWishlist() {
+  const { slug } = useParams();
+  const [wishlist] = useState(() => {
+    try {
+      const stored = localStorage.getItem(`wishlist_${slug}`);
+      return stored ? JSON.parse(stored) : MOCK_WISHLIST;
+    } catch { return MOCK_WISHLIST; }
+  });
+
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null); // { type: 'cash'|'reserve'|'buy', item }
 
-  const filtered = WISHLIST.items.filter(item => {
+  const hostName = wishlist.hosts?.[0]?.name?.split(' ')[0] || 'them';
+
+  const filtered = wishlist.items.filter(item => {
     if (filter === 'cash') return item.type === 'cash_gift';
     if (filter === 'gift') return item.type === 'gift_item';
     return true;
@@ -476,21 +486,21 @@ export default function PublicWishlist() {
         <div className="absolute right-0 top-0 w-96 h-96 bg-brand-500 rounded-full opacity-10 blur-3xl" />
         <div className="relative max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="flex items-center justify-center -space-x-3 mb-5">
-            {WISHLIST.hosts.map(h => (
+            {wishlist.hosts.map(h => (
               <div key={h.name} className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 border-4 border-ep-navy flex items-center justify-center text-white font-extrabold">
                 {h.initials}
               </div>
             ))}
           </div>
-          <h1 className="text-3xl font-extrabold text-white mb-2">{WISHLIST.headline}</h1>
-          <div className="text-white/50 text-sm mb-3">{WISHLIST.event.date} · {WISHLIST.event.daysLeft} days away</div>
-          <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mb-6">{WISHLIST.message}</p>
+          <h1 className="text-3xl font-extrabold text-white mb-2">{wishlist.headline}</h1>
+          <div className="text-white/50 text-sm mb-3">{wishlist.event.date} · {wishlist.event.daysLeft} days away</div>
+          <p className="text-white/60 text-sm leading-relaxed max-w-md mx-auto mb-6">{wishlist.message}</p>
           <div className="flex items-center justify-center gap-6 text-xs text-white/40">
-            <span>{WISHLIST.stats.items} items</span>
+            <span>{wishlist.stats.items} items</span>
             <span>·</span>
-            <span>{WISHLIST.stats.gifted} already gifted</span>
+            <span>{wishlist.stats.gifted} already gifted</span>
             <span>·</span>
-            <span>{WISHLIST.stats.contributors} contributors</span>
+            <span>{wishlist.stats.contributors} contributors</span>
           </div>
         </div>
 
@@ -539,7 +549,7 @@ export default function PublicWishlist() {
       {/* Modals */}
       {modal?.type === 'cash' && (
         <Modal onClose={() => setModal(null)}>
-          <CashGiftModal item={modal.item} onClose={() => setModal(null)} />
+          <CashGiftModal item={modal.item} onClose={() => setModal(null)} hostName={hostName} headline={wishlist.headline} />
         </Modal>
       )}
       {modal?.type === 'reserve' && (

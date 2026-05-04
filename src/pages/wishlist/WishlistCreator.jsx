@@ -511,8 +511,7 @@ function CustomizeStep({ meta, setMeta, onPublish }) {
 }
 
 // ─── Step: Published ──────────────────────────────────────────────────────────
-function PublishedStep({ navigate }) {
-  const slug = 'tunde-bola-dec2026';
+function PublishedStep({ navigate, slug }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard?.writeText(`https://eventpark.ng/wish/${slug}`).catch(() => {});
@@ -619,6 +618,17 @@ function stepToProgress(step) {
   return 3;
 }
 
+function generateSlug(text) {
+  const base = (text || 'my-wishlist')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 35);
+  const nonce = Math.random().toString(36).slice(2, 5);
+  return `${base}-${nonce}`;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function WishlistCreator() {
   const navigate = useNavigate();
@@ -631,6 +641,7 @@ export default function WishlistCreator() {
   const [showContinue, setShowContinue] = useState(false);
   const [continueCtx, setContinueCtx] = useState({ doneType: '', nextType: '' });
   const [meta, setMeta] = useState({ headline: '', message: '', color: '#6366f1', showContributors: true, allowAnonymous: true });
+  const [publishedSlug, setPublishedSlug] = useState('');
 
   const allItems = [...cashItems, ...giftItems];
   const progIdx = stepToProgress(step);
@@ -682,6 +693,30 @@ export default function WishlistCreator() {
     }
     else if (step === 'customize') setStep('preview');
     else if (step === 'published') navigate('/dashboard/wishlist');
+  }
+
+  function publish() {
+    const headline = meta.headline.trim() || "My Event Wishlist";
+    const slug = generateSlug(headline);
+    const wishlistData = {
+      slug,
+      headline,
+      message: meta.message.trim() || "Thanks for celebrating with us. If you'd like to gift something, here's what would mean a lot.",
+      color: meta.color,
+      showContributors: meta.showContributors,
+      allowAnonymous: meta.allowAnonymous,
+      event: { date: 'Dec 14, 2026', daysLeft: 225 },
+      hosts: [{ name: 'Demo Host', initials: 'DH' }],
+      stats: { items: allItems.length, gifted: 0, contributors: 0 },
+      items: allItems.map(item =>
+        item.type === 'cash_gift'
+          ? { ...item, raised: 0, contributors: 0, status: 'open' }
+          : { ...item, remaining: item.quantity, status: 'open' }
+      ),
+    };
+    try { localStorage.setItem(`wishlist_${slug}`, JSON.stringify(wishlistData)); } catch {}
+    setPublishedSlug(slug);
+    setStep('published');
   }
 
   const hasNextType = pendingTypes.length > 0;
@@ -772,7 +807,7 @@ export default function WishlistCreator() {
               <PreviewStep
                 allItems={allItems}
                 onCustomize={() => setStep('customize')}
-                onPublish={() => setStep('published')}
+                onPublish={publish}
                 onEditItems={() => {
                   const firstSelected = TYPE_ORDER.find(t => selectedTypes.includes(t));
                   goToFirstFor(firstSelected || 'types');
@@ -780,9 +815,9 @@ export default function WishlistCreator() {
               />
             )}
             {step === 'customize' && (
-              <CustomizeStep meta={meta} setMeta={setMeta} onPublish={() => setStep('published')} />
+              <CustomizeStep meta={meta} setMeta={setMeta} onPublish={publish} />
             )}
-            {step === 'published' && <PublishedStep navigate={navigate} />}
+            {step === 'published' && <PublishedStep navigate={navigate} slug={publishedSlug} />}
           </div>
         </div>
       </div>
