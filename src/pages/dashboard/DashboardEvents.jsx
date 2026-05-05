@@ -85,7 +85,7 @@ export default function DashboardEvents() {
                     </div>
                     <span className="text-xs text-gray-500 font-medium">{ev.rsvpd}/{ev.guests} RSVPs</span>
                   </div>
-                  <Link to={`/events/create`}
+                  <Link to={`/dashboard/events/${ev.id}`}
                     className="flex items-center gap-1 text-sm text-brand-600 font-semibold hover:underline">
                     Open <ChevronRight className="w-3.5 h-3.5" />
                   </Link>

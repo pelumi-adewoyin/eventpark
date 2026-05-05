@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Calendar, Gift, Wallet, Users, Settings,
-  ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight
+  ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight, Ticket
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { EventParkLogo } from '../../components/Logo';
@@ -11,8 +11,9 @@ const NAV = [
   { label: 'Overview', icon: LayoutDashboard, to: '/dashboard', end: true },
   { label: 'My Events', icon: Calendar, to: '/dashboard/events' },
   { label: 'To-Do', icon: ListTodo, to: '/dashboard/todos' },
-  { label: 'Collaborators', icon: Users, to: '/dashboard/collaborators' },
   { label: 'Wishlist', icon: Gift, to: '/dashboard/wishlist' },
+  { label: 'RSVP', icon: Ticket, to: '/dashboard/rsvp' },
+  { label: 'Collaborators', icon: Users, to: '/dashboard/collaborators' },
 ];
 
 const NAV_EXT = [
@@ -23,9 +24,9 @@ const NAV_EXT = [
 const BOTTOM_NAV = [
   { label: 'Home', icon: LayoutDashboard, to: '/dashboard', end: true },
   { label: 'Events', icon: Calendar, to: '/dashboard/events' },
-  { label: 'Wishlist', icon: Gift, to: '/dashboard/wishlist' },
-  { label: 'To-Do', icon: ListTodo, to: '/dashboard/todos' },
-  { label: 'Settings', icon: Settings, to: '/dashboard/settings' },
+  { label: 'RSVP', icon: Ticket, to: '/dashboard/rsvp' },
+  { label: 'Wallet', icon: Wallet, to: '/wallet' },
+  { label: 'More', icon: Settings, to: '/dashboard/settings' },
 ];
 
 function SidebarContent({ onClose }) {

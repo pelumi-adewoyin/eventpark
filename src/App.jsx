@@ -29,6 +29,8 @@ import DashboardTodos from './pages/dashboard/DashboardTodos';
 import DashboardWishlist from './pages/dashboard/DashboardWishlist';
 import DashboardCollaborators from './pages/dashboard/DashboardCollaborators';
 import DashboardSettings from './pages/dashboard/DashboardSettings';
+import DashboardRSVP from './pages/dashboard/DashboardRSVP';
+import DashboardEventWorkspace from './pages/dashboard/DashboardEventWorkspace';
 import PlannerDashboard from './pages/dashboard/PlannerDashboard';
 import CorporateDashboard from './pages/dashboard/CorporateDashboard';
 
@@ -38,6 +40,7 @@ import WalletPage from './pages/wallet/Wallet';
 import CheckIn from './pages/checkin/CheckIn';
 import WishlistCreator from './pages/wishlist/WishlistCreator';
 import PublicWishlist from './pages/wishlist/PublicWishlist';
+import RSVPAccept from './pages/rsvp/RSVPAccept';
 
 function Layout({ children, hideFooter = false, hideNav = false }) {
   return (
@@ -75,7 +78,10 @@ function AppContent() {
         <Route path="/" element={<Layout><Landing /></Layout>} />
         <Route path="/vendor-portal" element={<Layout><VendorPortal /></Layout>} />
 
-        {/* Discover */}
+        {/* Discover — primary spec paths */}
+        <Route path="/discover" element={<Layout><DiscoverEvents /></Layout>} />
+        <Route path="/discover/:id" element={<Layout><EventDetail /></Layout>} />
+        {/* Legacy aliases (keep working) */}
         <Route path="/discover/events" element={<Layout><DiscoverEvents /></Layout>} />
         <Route path="/discover/events/:id" element={<Layout><EventDetail /></Layout>} />
         <Route path="/discover/products" element={<Layout><DiscoverProducts /></Layout>} />
@@ -90,12 +96,14 @@ function AppContent() {
         <Route path="/business/signup" element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
 
-        {/* DIY Dashboard — nested routes under shared layout */}
+        {/* DIY Dashboard — nested routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<DashboardHome />} />
           <Route path="events" element={<DashboardEvents />} />
+          <Route path="events/:id" element={<DashboardEventWorkspace />} />
           <Route path="todos" element={<DashboardTodos />} />
           <Route path="wishlist" element={<DashboardWishlist />} />
+          <Route path="rsvp" element={<DashboardRSVP />} />
           <Route path="collaborators" element={<DashboardCollaborators />} />
           <Route path="settings" element={<DashboardSettings />} />
         </Route>
@@ -112,6 +120,9 @@ function AppContent() {
         {/* Wishlist */}
         <Route path="/wishlist/create" element={<WishlistCreator />} />
         <Route path="/wish/:slug" element={<Layout hideFooter><PublicWishlist /></Layout>} />
+
+        {/* RSVP accept (public, no nav) */}
+        <Route path="/rsvp/:token" element={<RSVPAccept />} />
 
         {/* Day-of check-in */}
         <Route path="/checkin/:id" element={<CheckIn />} />
