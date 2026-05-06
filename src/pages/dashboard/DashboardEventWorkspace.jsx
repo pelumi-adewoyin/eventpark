@@ -383,8 +383,56 @@ function AddGuestsModal({ onClose, onInvite }) {
             </div>
           )}
 
-          {/* Step 3 — form (manual / csv) */}
-          {step === 3 && method !== 'email' && (
+          {/* Step 3 — CSV upload */}
+          {step === 3 && method === 'csv' && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-brand-300 transition-colors p-8 text-center">
+                <FileUp className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-gray-700 mb-1">Drop your CSV here, or click to browse</p>
+                <p className="text-xs text-gray-400 mb-4">Columns: First Name, Last Name, Email, Phone (optional)</p>
+                <label className="cursor-pointer">
+                  <span className="inline-block px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors">
+                    Choose file
+                  </span>
+                  <input type="file" accept=".csv" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                      const lines = ev.target.result.split('\n').filter(Boolean).slice(1); // skip header
+                      const parsed = lines.map((line, i) => {
+                        const [firstName = '', lastName = '', email = '', phone = ''] = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                        return { id: Date.now() + i, firstName, lastName, email, phone, relationship: '', tags: '', token: Math.random().toString(36).slice(2, 8) };
+                      }).filter(g => g.email.includes('@'));
+                      if (parsed.length) {
+                        setQueue(prev => [...prev, ...parsed]);
+                        toast.success(`Imported ${parsed.length} guest${parsed.length !== 1 ? 's' : ''} from CSV`);
+                        setStep(4);
+                      } else {
+                        toast.error('No valid emails found in CSV. Check column order.');
+                      }
+                    };
+                    reader.readAsText(file);
+                  }} />
+                </label>
+              </div>
+              <a href="#" onClick={e => { e.preventDefault(); toast.success('Template downloaded!'); }}
+                className="flex items-center justify-center gap-2 text-sm text-brand-600 hover:text-brand-700 font-semibold transition-colors">
+                <Download className="w-4 h-4" /> Download CSV template
+              </a>
+              {queue.length > 0 && (
+                <div className="flex items-center justify-between bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+                  <span className="text-sm text-brand-700 font-semibold">{queue.length} guests imported</span>
+                  <button onClick={() => setStep(4)} className="px-3 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 transition-colors">
+                    Preview list →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3 — form (manual) */}
+          {step === 3 && method !== 'email' && method !== 'csv' && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -506,7 +554,7 @@ function AddGuestsModal({ onClose, onInvite }) {
               )}
 
               <div className="flex gap-2">
-                <button onClick={() => setStep(2)} className="flex-1 border border-gray-200 text-gray-700 text-sm font-semibold py-2.5 rounded-xl hover:border-gray-300 transition-all">
+                <button onClick={() => setStep(3)} className="flex-1 border border-gray-200 text-gray-700 text-sm font-semibold py-2.5 rounded-xl hover:border-gray-300 transition-all">
                   ← Add more
                 </button>
                 <button onClick={handleSend} className="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors">
@@ -541,9 +589,9 @@ function CopyLinkButton({ token }) {
   );
 }
 
-function ReminderModal({ count, onSend, onClose }) {
-  const [subject, setSubject] = useState(`Don't forget — Tunde & Bola Wedding on Dec 14`);
-  const [body, setBody]       = useState(`Hi {first_name},\n\nJust a friendly reminder — we'd love to know if you can make it!\n\nClick below to confirm your attendance.\n\nWith love,\nTunde & Bola`);
+function ReminderModal({ count, onSend, onClose, eventName = EVENT.name, eventDate = EVENT.date }) {
+  const [subject, setSubject] = useState(`Don't forget — ${eventName} on ${eventDate}`);
+  const [body, setBody]       = useState(`Hi {first_name},\n\nJust a friendly reminder — we'd love to know if you can make it!\n\nClick below to confirm your attendance.\n\nWith love,\nYour host`);
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
