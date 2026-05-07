@@ -1179,8 +1179,10 @@ export default function Signup() {
   const handleDemo = async () => {
     await authApi.requestOTP(DEMO_PHONE);
     await login(DEMO_PHONE, DEMO_OTP);
-    toast.success('Demo mode — welcome!');
-    navigate('/dashboard');
+    // Skip email + phone verification steps, jump straight to name
+    setHistory(['email', 'name']);
+    setStep('name');
+    toast.success('Phone verified — continue setting up your account');
   };
 
   const update = patch => setData(prev => ({ ...prev, ...patch }));
