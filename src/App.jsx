@@ -35,6 +35,8 @@ import DashboardSettings from './pages/dashboard/DashboardSettings';
 import DashboardRSVP from './pages/dashboard/DashboardRSVP';
 import DashboardEventWorkspace from './pages/dashboard/DashboardEventWorkspace';
 import DashboardBudget from './pages/dashboard/DashboardBudget';
+import WorkspaceBudget from './pages/dashboard/WorkspaceBudget';
+import ProductsMarketplace from './pages/discover/ProductsMarketplace';
 
 // Workspace-aware vendor page (personal → DashboardVendors, corporate → CorporateVendors)
 import WorkspaceVendors from './pages/dashboard/WorkspaceVendors';
@@ -99,6 +101,7 @@ function AppContent() {
         <Route path="/discover/events" element={<Layout><DiscoverEvents /></Layout>} />
         <Route path="/discover/events/:id" element={<Layout><EventDetail /></Layout>} />
         <Route path="/discover/products" element={<Layout><DiscoverProducts /></Layout>} />
+        <Route path="/products" element={<Layout><ProductsMarketplace /></Layout>} />
         <Route path="/discover/products/:id" element={<Layout><ProductDetail /></Layout>} />
         <Route path="/discover/vendors" element={<Layout><DiscoverVendors /></Layout>} />
         <Route path="/discover/vendors/:id" element={<Layout><VendorDetail /></Layout>} />
@@ -127,8 +130,11 @@ function AppContent() {
           <Route path="collaborators" element={<DashboardCollaborators />} />
           <Route path="settings" element={<DashboardSettings />} />
 
-          {/* Budget — works for both personal and corporate */}
-          <Route path="budget" element={<DashboardBudget />} />
+          {/* Budget — switches between personal and corporate views */}
+          <Route path="budget" element={<WorkspaceBudget />} />
+
+          {/* Products marketplace inside dashboard */}
+          <Route path="products" element={<ProductsMarketplace />} />
 
           {/* Corporate-only routes */}
           <Route path="approvals" element={<CorporateApprovals />} />
