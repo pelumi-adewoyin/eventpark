@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { events as eventsApi, guests as guestsApi, budget as budgetApi } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
   ChevronLeft, Share2, Edit2, Users, Clock, DollarSign, QrCode,
@@ -28,16 +29,8 @@ const AVATAR_GRADIENTS = [
   'from-sky-400 to-blue-600', 'from-fuchsia-400 to-pink-600',
 ];
 
-const INITIAL_GUESTS = [
-  { id: 1, name: 'Ngozi Okonkwo',    email: 'ngozi@email.com',   status: 'Accepted', date: 'May 2',   token: 'abc123' },
-  { id: 2, name: 'Emeka Adeyemi',    email: 'emeka@email.com',   status: 'Accepted', date: 'May 1',   token: 'def456' },
-  { id: 3, name: 'Bisi Williams',    email: 'bisi@email.com',    status: 'Pending',  date: null,      token: 'ghi789' },
-  { id: 4, name: 'Kemi Johnson',     email: 'kemi@email.com',    status: 'Declined', date: 'Apr 30',  token: 'jkl012' },
-  { id: 5, name: 'Aunty Grace',      email: 'grace@email.com',   status: 'Accepted', date: 'May 3',   token: 'mno345' },
-  { id: 6, name: 'Tolu Okafor',      email: 'tolu@email.com',    status: 'Pending',  date: null,      token: 'pqr678' },
-  { id: 7, name: 'Chukwuemeka F.',   email: 'chuks@email.com',   status: 'Accepted', date: 'May 2',   token: 'stu901' },
-  { id: 8, name: 'Fatima Al-Rashid', email: 'fatima@email.com',  status: 'Pending',  date: null,      token: 'vwx234' },
-];
+// INITIAL_GUESTS is kept as fallback while API data loads; replaced by real data on mount
+const INITIAL_GUESTS = [];
 
 // ─── IV templates ─────────────────────────────────────────────────────────────
 const IV_TEMPLATES = [
@@ -66,6 +59,7 @@ const BUDGET_CATEGORIES = [
 const TOTAL_BUDGET = 2500000;
 const TOTAL_SPENT  = 1690000;
 
+// TODO: Replace with todos API when built
 const TODOS_DATA = [
   // Pre-event
   { id: 1, group: 'Pre-event',  text: 'Confirm catering menu tasting',        done: false, priority: 'high',   due: 'May 10', assignee: 'NO' },
@@ -87,6 +81,20 @@ const ACTIVITY = [
   { icon: '🎉', text: 'Event workspace created',                      time: '3d ago' },
   { icon: '🧾', text: 'Venue deposit of ₦650,000 logged',            time: '5d ago' },
 ];
+
+// ─── Date/time helpers ───────────────────────────────────────────────────────
+
+function fmtDate(str) {
+  if (!str) return '—';
+  return new Date(str).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+function daysFrom(str) {
+  if (!str) return 0;
+  return Math.max(0, Math.ceil((new Date(str) - Date.now()) / 86400000));
+}
+
+// Colors for budget categories fetched from API
+const COLORS = ['bg-brand-400','bg-rose-400','bg-violet-400','bg-amber-400','bg-teal-400','bg-green-400'];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -126,12 +134,16 @@ const PRIORITY_STYLES = {
 
 // ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
 
-function OverviewTab() {
-  const budgetPct = Math.round((TOTAL_SPENT / TOTAL_BUDGET) * 100);
+function OverviewTab({ eventData, budgetSummary }) {
+  const totalBudget = budgetSummary?.total || TOTAL_BUDGET;
+  const totalSpent  = budgetSummary?.spent || TOTAL_SPENT;
+  const budgetPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  const daysLeft  = eventData?.start_at ? daysFrom(eventData.start_at) : EVENT.daysLeft;
+  const dateLabel = eventData?.start_at ? fmtDate(eventData.start_at) : EVENT.date;
   const stats = [
-    { icon: Clock,       label: 'Days to go',    value: EVENT.daysLeft, sub: EVENT.date,     color: 'bg-brand-50 text-brand-600' },
+    { icon: Clock,       label: 'Days to go',    value: daysLeft,       sub: dateLabel,      color: 'bg-brand-50 text-brand-600' },
     { icon: Users,       label: 'RSVPs',         value: 32,             sub: '20 accepted',  color: 'bg-green-50 text-green-600' },
-    { icon: DollarSign,  label: 'Budget used',   value: `${budgetPct}%`,sub: '₦1.69M spent', color: 'bg-orange-50 text-orange-500' },
+    { icon: DollarSign,  label: 'Budget used',   value: `${budgetPct}%`,sub: `₦${(totalSpent/1000000).toFixed(2)}M spent`, color: 'bg-orange-50 text-orange-500' },
     { icon: QrCode,      label: 'Check-in',      value: '0%',           sub: '0 checked in', color: 'bg-purple-50 text-purple-600' },
   ];
 
@@ -627,9 +639,14 @@ function ReminderModal({ count, onSend, onClose, eventName = EVENT.name, eventDa
   );
 }
 
-function GuestsTab() {
-  const [guests, setGuests]           = useState(INITIAL_GUESTS);
+function GuestsTab({ initialGuests = INITIAL_GUESTS }) {
+  const [guests, setGuests]           = useState(initialGuests);
   const [guestTab, setGuestTab]       = useState('All');
+
+  // Sync when real API data arrives
+  useEffect(() => {
+    if (initialGuests.length > 0) setGuests(initialGuests);
+  }, [initialGuests]);
   const [search, setSearch]           = useState('');
   const [selected, setSelected]       = useState([]);
   const [showModal, setShowModal]     = useState(false);
@@ -880,14 +897,20 @@ function GuestsTab() {
 
 // ─── BUDGET TAB ───────────────────────────────────────────────────────────────
 
-function BudgetTab() {
+function BudgetTab({ budgetLines: apiLines, budgetSummary }) {
   const [showModal, setShowModal] = useState(false);
   const [expense, setExpense]     = useState({ category: '', amount: '', description: '', date: '' });
 
-  const spent      = TOTAL_SPENT;
-  const remaining  = TOTAL_BUDGET - spent;
-  const budgetPct  = Math.round((spent / TOTAL_BUDGET) * 100);
-  const maxCat     = Math.max(...BUDGET_CATEGORIES.map(c => c.amount));
+  // Use real API data when available, fall back to static constants
+  const displayCategories = apiLines && apiLines.length > 0
+    ? apiLines.map((l, i) => ({ name: l.category, amount: l.allocated_ngn || 0, color: COLORS[i % COLORS.length] }))
+    : BUDGET_CATEGORIES;
+
+  const totalBudget = (budgetSummary?.total || 0) > 0 ? budgetSummary.total : TOTAL_BUDGET;
+  const spent       = (budgetSummary?.spent || 0) > 0 ? budgetSummary.spent : TOTAL_SPENT;
+  const remaining   = totalBudget - spent;
+  const budgetPct   = totalBudget > 0 ? Math.round((spent / totalBudget) * 100) : 0;
+  const maxCat      = Math.max(...displayCategories.map(c => c.amount), 1);
 
   function handleAddExpense() {
     if (!expense.category || !expense.amount) { toast.error('Category and amount are required.'); return; }
@@ -902,9 +925,9 @@ function BudgetTab() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="grid grid-cols-3 gap-4 mb-4">
           {[
-            { label: 'Total budget', val: `₦${(TOTAL_BUDGET / 1000000).toFixed(1)}M`, cls: 'text-gray-900' },
-            { label: 'Spent',        val: `₦${(spent / 1000000).toFixed(2)}M`,        cls: 'text-orange-600' },
-            { label: 'Remaining',    val: `₦${(remaining / 1000000).toFixed(2)}M`,    cls: 'text-green-600' },
+            { label: 'Total budget', val: `₦${(totalBudget / 1000000).toFixed(1)}M`, cls: 'text-gray-900' },
+            { label: 'Spent',        val: `₦${(spent / 1000000).toFixed(2)}M`,       cls: 'text-orange-600' },
+            { label: 'Remaining',    val: `₦${(remaining / 1000000).toFixed(2)}M`,   cls: 'text-green-600' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <p className={`text-xl font-extrabold ${s.cls}`}>{s.val}</p>
@@ -933,7 +956,7 @@ function BudgetTab() {
           </button>
         </div>
         <div className="space-y-3">
-          {BUDGET_CATEGORIES.map(cat => {
+          {displayCategories.map(cat => {
             const pct = Math.round((cat.amount / maxCat) * 100);
             return (
               <div key={cat.name}>
@@ -969,7 +992,7 @@ function BudgetTab() {
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400 bg-white"
                 >
                   <option value="">Select category…</option>
-                  {BUDGET_CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                  {displayCategories.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -1076,7 +1099,9 @@ function TodosTab() {
 
 // ─── CHECK-IN TAB ─────────────────────────────────────────────────────────────
 
-function CheckInTab() {
+function CheckInTab({ eventData, eventId }) {
+  const daysLeft = eventData?.start_at ? daysFrom(eventData.start_at) : EVENT.daysLeft;
+  const checkinId = eventId || EVENT.id;
   return (
     <div className="space-y-4">
       {/* Pre-event state */}
@@ -1086,11 +1111,11 @@ function CheckInTab() {
         </div>
         <h3 className="font-bold text-gray-900 text-lg mb-2">Check-in not yet open</h3>
         <p className="text-sm text-gray-400 mb-6">
-          Check-in opens 2 hours before your event · Currently <span className="font-semibold text-gray-600">{EVENT.daysLeft} days away</span>
+          Check-in opens 2 hours before your event · Currently <span className="font-semibold text-gray-600">{daysLeft} days away</span>
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            to="/checkin/evt-001"
+            to={`/checkin/${checkinId}`}
             className="flex items-center justify-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-colors"
           >
             <ExternalLink className="w-4 h-4" />
@@ -1139,6 +1164,59 @@ export default function DashboardEventWorkspace() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('Overview');
 
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  const [eventData, setEventData]       = useState(null);
+  const [guestList, setGuestList]       = useState(INITIAL_GUESTS);
+  const [budgetLines, setBudgetLines]   = useState([]);
+  const [budgetSummary, setBudgetSummary] = useState({ total: 0, spent: 0 });
+  const [loading, setLoading]           = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    Promise.all([
+      eventsApi.get(id).catch(() => null),
+      guestsApi.list(id).catch(() => []),
+      budgetApi.list(id).catch(() => []),
+    ]).then(([ev, gs, bl]) => {
+      if (ev) setEventData(ev);
+      const guestArray = Array.isArray(gs) ? gs : (gs?.guests ?? []);
+      if (guestArray.length) {
+        // Normalise field names for the existing UI (expects .name, .status, .date, .token)
+        setGuestList(guestArray.map(g => ({
+          ...g,
+          name:   g.full_name || g.name || g.email || '—',
+          status: normalizeGuestStatus(g),
+          date:   g.responded_at ? new Date(g.responded_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' }) : null,
+          token:  g.rsvp_token || g.token || null,
+        })));
+      }
+      const lineArray = Array.isArray(bl) ? bl : (bl?.lines ?? []);
+      if (lineArray.length) {
+        setBudgetLines(lineArray);
+        const total = lineArray.reduce((s, l) => s + (l.allocated_ngn || 0), 0);
+        const spent = lineArray.reduce((s, l) => s + (l.spent_ngn || 0), 0);
+        setBudgetSummary({ total, spent });
+      }
+    }).finally(() => setLoading(false));
+  }, [id]);
+
+  // Loading skeleton
+  if (loading && !eventData) {
+    return (
+      <div className="p-4 sm:p-8 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded-xl w-64 mb-4" />
+        <div className="h-48 bg-gray-200 rounded-2xl mb-6" />
+      </div>
+    );
+  }
+
+  // Derived display values — real data with fallbacks to static constants
+  const eventName     = eventData?.title || eventData?.name || EVENT.name;
+  const eventDate     = eventData?.start_at ? fmtDate(eventData.start_at) : EVENT.date;
+  const eventVenue    = eventData?.venue_name || eventData?.venue || EVENT.venue;
+  const eventStatus   = eventData?.status || EVENT.status;
+  const coverGradient = EVENT.coverGradient; // keep gradient; image support can be added later
+
   return (
     <div className="p-4 sm:p-6 max-w-4xl">
       {/* Back link */}
@@ -1153,16 +1231,16 @@ export default function DashboardEventWorkspace() {
       {/* Event header card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex mb-4">
         {/* Cover strip */}
-        <div className={`w-10 flex-shrink-0 bg-gradient-to-b ${EVENT.coverGradient}`} />
+        <div className={`w-10 flex-shrink-0 bg-gradient-to-b ${coverGradient}`} />
 
         <div className="flex-grow p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="font-extrabold text-xl text-gray-900 truncate">{EVENT.name}</h2>
-              <p className="text-sm text-gray-400 mt-0.5">{EVENT.date} · {EVENT.venue}</p>
+              <h2 className="font-extrabold text-xl text-gray-900 truncate">{eventName}</h2>
+              <p className="text-sm text-gray-400 mt-0.5">{eventDate} · {eventVenue}</p>
               <div className="mt-2">
                 <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-green-100 text-green-700">
-                  {EVENT.status}
+                  {eventStatus}
                 </span>
               </div>
             </div>
@@ -1196,11 +1274,20 @@ export default function DashboardEventWorkspace() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'Overview'  && <OverviewTab />}
-      {activeTab === 'Guests'    && <GuestsTab />}
-      {activeTab === 'Budget'    && <BudgetTab />}
+      {activeTab === 'Overview'  && <OverviewTab eventData={eventData} budgetSummary={budgetSummary} />}
+      {activeTab === 'Guests'    && <GuestsTab initialGuests={guestList} />}
+      {activeTab === 'Budget'    && <BudgetTab budgetLines={budgetLines} budgetSummary={budgetSummary} />}
       {activeTab === 'To-dos'    && <TodosTab />}
-      {activeTab === 'Check-in'  && <CheckInTab />}
+      {activeTab === 'Check-in'  && <CheckInTab eventData={eventData} eventId={id} />}
     </div>
   );
+}
+
+// ─── Guest status normaliser (for workspace display) ──────────────────────────
+function normalizeGuestStatus(g) {
+  const raw = g.rsvp_status || g.status || '';
+  if (raw === 'rsvp_yes' || raw === 'accepted')  return 'Accepted';
+  if (raw === 'rsvp_no'  || raw === 'declined')  return 'Declined';
+  if (raw === 'Accepted' || raw === 'Declined')  return raw;
+  return 'Pending';
 }
