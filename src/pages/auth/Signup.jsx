@@ -326,10 +326,11 @@ function StepEmailOTP({ data, onNext, onBack }) {
   );
 }
 
-function StepPhone({ data, onNext, onBack }) {
+function StepPhone({ data, onNext, onBack, onDemo }) {
   const [phone, setPhone] = useState(data.phone || '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const submit = async () => {
     const clean = phone.replace(/\s/g, '');
@@ -344,6 +345,11 @@ function StepPhone({ data, onNext, onBack }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    try { await onDemo(); } finally { setDemoLoading(false); }
   };
 
   return (
@@ -367,6 +373,20 @@ function StepPhone({ data, onNext, onBack }) {
           {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
         <Btn onClick={submit} loading={loading}>Send code <ArrowRight className="w-4 h-4" /></Btn>
+
+        {onDemo && (
+          <>
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-200" />
+              <span className="mx-3 text-xs text-gray-400 font-medium">or</span>
+              <div className="flex-grow border-t border-gray-200" />
+            </div>
+            <button type="button" onClick={handleDemo} disabled={demoLoading}
+              className="w-full border-2 border-dashed border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold py-3 rounded-2xl transition-all text-sm disabled:opacity-60 flex items-center justify-center gap-2">
+              {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Skip — use demo account'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1278,7 +1298,7 @@ export default function Signup() {
         <div className="w-full max-w-lg">
           <div className="flex justify-center mb-6 lg:hidden"><EventParkLogo size="md" /></div>
           <CurrentStep data={data} onNext={advance} onBack={goBack} onFinish={finish}
-            {...(step === 'email' ? { onDemo: handleDemo } : {})} />
+            {...(['email', 'phone'].includes(step) ? { onDemo: handleDemo } : {})} />
         </div>
       </div>
     </div>
