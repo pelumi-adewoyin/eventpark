@@ -8,14 +8,20 @@ function deriveWorkspace(user) {
   if (!user) return null;
   const type = user.role === 'corporate' ? 'corporate'
     : user.role === 'planner' ? 'planner'
+    : user.role === 'vendor' ? 'vendor'
     : 'personal';
   return {
     id: `ws-${user.id}`,
-    type,  // 'personal' | 'corporate' | 'planner'
-    role: user.role, // their role within the workspace
+    type,  // 'personal' | 'corporate' | 'planner' | 'vendor'
+    role: user.role,
     label: type === 'corporate' ? (user.companyName || 'My Company')
          : type === 'planner' ? 'Planner Dashboard'
+         : type === 'vendor' ? (user.businessName || 'My Business')
          : 'Personal',
+    // vendor-specific fields
+    vendorType: user.vendorType || null,          // 'product' | 'service'
+    verificationTier: user.verificationTier || 0,  // 0–3
+    verificationStatus: user.verificationStatus || 'tier_1',
   };
 }
 
@@ -156,5 +162,11 @@ function normalizeUser(u) {
     walletEscrow: u.wallet?.escrow_held || 0,
     companyName: u.org_name || u.company_name || null,
     orgId: u.org_id || null,
+    // Vendor-specific fields
+    businessName: u.business_name || u.vendor?.business_name || null,
+    vendorType: u.vendor_type || u.vendor?.vendor_type || null,
+    vendorId: u.vendor_id || u.vendor?.id || null,
+    verificationTier: u.verification_tier ?? u.vendor?.verification_tier ?? 0,
+    verificationStatus: u.verification_status || u.vendor?.verification_status || 'tier_1',
   };
 }

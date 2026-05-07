@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Calendar, Gift, Wallet, Users, Settings,
   ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight, Ticket,
   CheckSquare, FileText, DollarSign, Shield, BarChart2, Zap, Heart, Package,
+  ShoppingBag, MessageSquare, Star, Boxes, Wrench, CreditCard, User,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { EventParkLogo } from '../../components/Logo';
@@ -50,10 +51,35 @@ const CORP_NAV = [
   { label: 'Settings', icon: Settings, to: '/dashboard/settings' },
 ];
 
+// Vendor nav — product vendor gets Orders; service vendor gets Bookings & Calendar
+const VENDOR_NAV_PRODUCT = [
+  { label: 'Overview',    icon: LayoutDashboard, to: '/dashboard', end: true },
+  { label: 'Orders',      icon: ShoppingBag,     to: '/dashboard/orders' },
+  { label: 'Workspace',   icon: MessageSquare,   to: '/dashboard/workspace' },
+  { label: 'Inventory',   icon: Boxes,           to: '/dashboard/inventory' },
+  { label: 'Payments',    icon: CreditCard,      to: '/dashboard/payments' },
+  { label: 'Storefront',  icon: Store,           to: '/dashboard/storefront' },
+  { label: 'Verification',icon: Shield,          to: '/dashboard/verification' },
+  { label: 'Settings',    icon: Settings,        to: '/dashboard/settings' },
+];
+
+const VENDOR_NAV_SERVICE = [
+  { label: 'Overview',    icon: LayoutDashboard, to: '/dashboard', end: true },
+  { label: 'Bookings',    icon: Ticket,          to: '/dashboard/bookings' },
+  { label: 'Workspace',   icon: MessageSquare,   to: '/dashboard/workspace' },
+  { label: 'Services',    icon: Wrench,          to: '/dashboard/services' },
+  { label: 'Calendar',    icon: Calendar,        to: '/dashboard/calendar' },
+  { label: 'Payments',    icon: CreditCard,      to: '/dashboard/payments' },
+  { label: 'Storefront',  icon: Store,           to: '/dashboard/storefront' },
+  { label: 'Verification',icon: Shield,          to: '/dashboard/verification' },
+  { label: 'Settings',    icon: Settings,        to: '/dashboard/settings' },
+];
+
 const WORKSPACE_BADGE = {
   corporate: { label: 'Corporate', color: 'bg-orange-100 text-orange-700' },
   planner:   { label: 'Planner',   color: 'bg-purple-100 text-purple-700' },
   personal:  { label: 'Personal',  color: 'bg-blue-100 text-blue-700' },
+  vendor:    { label: 'Vendor',    color: 'bg-green-100 text-green-700' },
 };
 
 function SidebarContent({ onClose }) {
@@ -61,13 +87,17 @@ function SidebarContent({ onClose }) {
   const navigate = useNavigate();
   const wsType = activeWorkspace?.type || 'personal';
   const isCorporate = wsType === 'corporate';
+  const isVendor = wsType === 'vendor';
 
   const cls = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
       isActive ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'
     }`;
 
-  const navItems = isCorporate ? CORP_NAV : NAV;
+  const vendorType = activeWorkspace?.vendorType || user?.vendorType;
+  const navItems = isCorporate ? CORP_NAV
+    : isVendor ? (vendorType === 'product' ? VENDOR_NAV_PRODUCT : VENDOR_NAV_SERVICE)
+    : NAV;
 
   return (
     <div className="h-full flex flex-col bg-gray-950 overflow-hidden">
@@ -91,6 +121,8 @@ function SidebarContent({ onClose }) {
             <div className="text-white text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</div>
             {isCorporate ? (
               <div className="text-gray-500 text-xs truncate">{activeWorkspace.label}</div>
+            ) : isVendor ? (
+              <div className="text-gray-500 text-xs truncate">{activeWorkspace?.label || user?.businessName || 'Vendor'}</div>
             ) : (
               <div className="text-gray-500 text-xs">Personal · Tier {user?.kycTier || 1}</div>
             )}
@@ -107,7 +139,7 @@ function SidebarContent({ onClose }) {
           </NavLink>
         ))}
 
-        {!isCorporate && (
+        {!isCorporate && !isVendor && (
           <>
             <div className="pt-3 mt-2 border-t border-white/10 space-y-0.5">
               {NAV_EXT.map(item => (
@@ -129,18 +161,34 @@ function SidebarContent({ onClose }) {
         )}
       </nav>
 
-      {/* Wallet card (personal only) */}
+      {/* Wallet card */}
       {!isCorporate && (
-        <div className="mx-3 mb-3 p-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex-shrink-0">
-          <div className="text-brand-200 text-xs font-medium mb-1">Wallet Balance</div>
-          <div className="text-white text-xl font-extrabold">₦{(user?.walletBalance || 0).toLocaleString()}</div>
-          {(user?.walletEscrow || 0) > 0 && (
-            <div className="text-brand-300 text-xs mt-0.5">₦{(user.walletEscrow).toLocaleString()} in escrow</div>
+        <div className={`mx-3 mb-3 p-4 rounded-2xl flex-shrink-0 ${isVendor ? 'bg-gradient-to-br from-green-700 to-green-900' : 'bg-gradient-to-br from-brand-600 to-brand-800'}`}>
+          {isVendor ? (
+            <>
+              <div className="text-green-200 text-xs font-medium mb-1">Available Balance</div>
+              <div className="text-white text-xl font-extrabold">₦{(user?.walletBalance || 0).toLocaleString()}</div>
+              {(user?.walletEscrow || 0) > 0 && (
+                <div className="text-green-300 text-xs mt-0.5">₦{(user.walletEscrow).toLocaleString()} in escrow</div>
+              )}
+              <Link to="/dashboard/payments" onClick={onClose}
+                className="mt-3 flex items-center gap-1 text-white text-xs font-semibold hover:underline">
+                View payments <ArrowUpRight className="w-3 h-3" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="text-brand-200 text-xs font-medium mb-1">Wallet Balance</div>
+              <div className="text-white text-xl font-extrabold">₦{(user?.walletBalance || 0).toLocaleString()}</div>
+              {(user?.walletEscrow || 0) > 0 && (
+                <div className="text-brand-300 text-xs mt-0.5">₦{(user.walletEscrow).toLocaleString()} in escrow</div>
+              )}
+              <Link to="/wallet" onClick={onClose}
+                className="mt-3 flex items-center gap-1 text-white text-xs font-semibold hover:underline">
+                Manage wallet <ArrowUpRight className="w-3 h-3" />
+              </Link>
+            </>
           )}
-          <Link to="/wallet" onClick={onClose}
-            className="mt-3 flex items-center gap-1 text-white text-xs font-semibold hover:underline">
-            Manage wallet <ArrowUpRight className="w-3 h-3" />
-          </Link>
         </div>
       )}
 
@@ -160,6 +208,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, activeWorkspace } = useAuth();
   const wsType = activeWorkspace?.type || 'personal';
+  const isVendor = wsType === 'vendor';
   const badge = WORKSPACE_BADGE[wsType] || WORKSPACE_BADGE.personal;
 
   return (
@@ -210,22 +259,41 @@ export default function DashboardLayout() {
             <div className="flex-1 lg:hidden" />
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Link to="/wallet"
-                className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition-colors">
-                <Wallet className="w-3.5 h-3.5" />
-                ₦{((user?.walletBalance || 0) / 1000).toFixed(0)}K
-              </Link>
-
-              <button className="relative w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                <Bell className="w-4 h-4 text-gray-600" />
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">3</span>
-              </button>
-
-              <Link to="/events/create"
-                className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-colors">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Event</span>
-              </Link>
+              {isVendor ? (
+                <>
+                  <Link to="/dashboard/payments"
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 hover:bg-green-100 rounded-xl text-sm font-semibold text-green-700 transition-colors">
+                    <Wallet className="w-3.5 h-3.5" />
+                    ₦{((user?.walletBalance || 0) / 1000).toFixed(0)}K
+                  </Link>
+                  <button className="relative w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <Bell className="w-4 h-4 text-gray-600" />
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                  </button>
+                  <Link to="/dashboard/storefront"
+                    className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-colors">
+                    <Store className="w-4 h-4" />
+                    <span className="hidden sm:inline">My Storefront</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/wallet"
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition-colors">
+                    <Wallet className="w-3.5 h-3.5" />
+                    ₦{((user?.walletBalance || 0) / 1000).toFixed(0)}K
+                  </Link>
+                  <button className="relative w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <Bell className="w-4 h-4 text-gray-600" />
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                  </button>
+                  <Link to="/events/create"
+                    className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-colors">
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">New Event</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -239,11 +307,28 @@ export default function DashboardLayout() {
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white border-t border-gray-200 z-30 safe-area-inset-bottom">
         <div className="flex">
-          {BOTTOM_NAV.map(item => (
+          {(isVendor
+            ? (activeWorkspace?.vendorType === 'product'
+                ? [
+                    { label: 'Home',      icon: LayoutDashboard, to: '/dashboard', end: true },
+                    { label: 'Orders',    icon: ShoppingBag,     to: '/dashboard/orders' },
+                    { label: 'Workspace', icon: MessageSquare,   to: '/dashboard/workspace' },
+                    { label: 'Payments',  icon: CreditCard,      to: '/dashboard/payments' },
+                    { label: 'Store',     icon: Store,           to: '/dashboard/storefront' },
+                  ]
+                : [
+                    { label: 'Home',      icon: LayoutDashboard, to: '/dashboard', end: true },
+                    { label: 'Bookings',  icon: Ticket,          to: '/dashboard/bookings' },
+                    { label: 'Workspace', icon: MessageSquare,   to: '/dashboard/workspace' },
+                    { label: 'Payments',  icon: CreditCard,      to: '/dashboard/payments' },
+                    { label: 'Store',     icon: Store,           to: '/dashboard/storefront' },
+                  ])
+            : BOTTOM_NAV
+          ).map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center gap-0.5 py-2 px-1 text-[10px] font-semibold transition-colors ${
-                  isActive ? 'text-brand-600' : 'text-gray-400'
+                  isActive ? (isVendor ? 'text-green-600' : 'text-brand-600') : 'text-gray-400'
                 }`
               }>
               <item.icon className="w-5 h-5" />

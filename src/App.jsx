@@ -15,6 +15,8 @@ import ProductDetail from './pages/discover/ProductDetail';
 import DiscoverVendors from './pages/discover/Vendors';
 import VendorDetail from './pages/discover/VendorDetail';
 import VendorPortal from './pages/VendorPortal';
+import VendorLanding from './pages/vendor/VendorLanding';
+import VendorSignup from './pages/vendor/VendorSignup';
 
 // Auth
 import Login from './pages/auth/Login';
@@ -49,6 +51,17 @@ import CorporateWallet from './pages/dashboard/corporate/CorporateWallet';
 import CorporateAudit from './pages/dashboard/corporate/CorporateAudit';
 import CorporateReports from './pages/dashboard/corporate/CorporateReports';
 import CorporateIntegrations from './pages/dashboard/corporate/CorporateIntegrations';
+
+// Vendor dashboard pages
+import VendorOrders from './pages/dashboard/vendor/VendorOrders';
+import VendorBookings from './pages/dashboard/vendor/VendorBookings';
+import VendorWorkspace from './pages/dashboard/vendor/VendorWorkspace';
+import VendorInventory from './pages/dashboard/vendor/VendorInventory';
+import VendorServices from './pages/dashboard/vendor/VendorServices';
+import VendorPayments from './pages/dashboard/vendor/VendorPayments';
+import VendorStorefront from './pages/dashboard/vendor/VendorStorefront';
+import VendorVerification from './pages/dashboard/vendor/VendorVerification';
+import VendorCalendar from './pages/dashboard/vendor/VendorCalendar';
 
 // Features
 import CreateEvent from './pages/events/CreateEvent';
@@ -93,6 +106,8 @@ function AppContent() {
         {/* Public marketing */}
         <Route path="/" element={<Layout><Landing /></Layout>} />
         <Route path="/vendor-portal" element={<Layout><VendorPortal /></Layout>} />
+        <Route path="/vendors-landing" element={<Layout><VendorLanding /></Layout>} />
+        <Route path="/vendor/signup" element={<VendorSignup />} />
 
         {/* Discover — primary spec paths */}
         <Route path="/discover" element={<Layout><DiscoverEvents /></Layout>} />
@@ -145,6 +160,17 @@ function AppContent() {
           <Route path="audit" element={<CorporateAudit />} />
           <Route path="reports" element={<CorporateReports />} />
           <Route path="integrations" element={<CorporateIntegrations />} />
+
+          {/* Vendor routes */}
+          <Route path="orders" element={<VendorOrders />} />
+          <Route path="bookings" element={<VendorBookings />} />
+          <Route path="workspace" element={<VendorWorkspace />} />
+          <Route path="inventory" element={<VendorInventory />} />
+          <Route path="services" element={<VendorServices />} />
+          <Route path="payments" element={<VendorPayments />} />
+          <Route path="storefront" element={<VendorStorefront />} />
+          <Route path="verification" element={<VendorVerification />} />
+          <Route path="calendar" element={<VendorCalendar />} />
         </Route>
 
         <Route path="/planner" element={<Navigate to="/dashboard" replace />} />

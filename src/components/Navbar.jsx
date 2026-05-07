@@ -14,8 +14,8 @@ const navLinks = [
     ],
   },
   { label: 'For Business', href: '/business/login' },
+  { label: 'Vendors', href: '/vendors-landing' },
   { label: 'Pricing', href: '/#pricing' },
-  { label: 'About', href: '/#about' },
 ];
 
 const dashboardRoutes = { diy: '/dashboard', planner: '/planner', corporate: '/corporate' };
