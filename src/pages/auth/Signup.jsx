@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, CheckCircle2, Upload, ChevronDown,
-  Check, Shield, Building2,
+  Check, Shield, Building2, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { auth as authApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
+
+const DEMO_PHONE = '+2340000000000';
+const DEMO_OTP = '000000';
 
 // Normalise phone: 08012345678 or +2348012345678 → +234...
 function normalisePhone(raw) {
@@ -231,10 +234,11 @@ function Cooldown({ seconds, onResend }) {
 
 // ─── Universal steps ──────────────────────────────────────────────────────────
 
-function StepEmail({ onNext }) {
+function StepEmail({ onNext, onDemo }) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const submit = async () => {
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { setError('Enter a valid email address'); return; }
@@ -244,6 +248,15 @@ function StepEmail({ onNext }) {
     toast.success('Verification code sent to your email');
     toast('Demo mode — enter any 6 digits as OTP', { icon: '🔑', duration: 12000 });
     onNext({ email: email.toLowerCase() });
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await onDemo();
+    } finally {
+      setDemoLoading(false);
+    }
   };
 
   return (
@@ -256,6 +269,21 @@ function StepEmail({ onNext }) {
           onChange={e => { setEmail(e.target.value); setError(''); }}
           onKeyDown={e => e.key === 'Enter' && submit()} autoFocus />
         <Btn onClick={submit} loading={loading}>Continue <ArrowRight className="w-4 h-4" /></Btn>
+
+        {onDemo && (
+          <>
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-200" />
+              <span className="mx-3 text-xs text-gray-400 font-medium">or</span>
+              <div className="flex-grow border-t border-gray-200" />
+            </div>
+            <button type="button" onClick={handleDemo} disabled={demoLoading}
+              className="w-full border-2 border-dashed border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold py-3 rounded-2xl transition-all text-sm disabled:opacity-60 flex items-center justify-center gap-2">
+              {demoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Try Demo'}
+            </button>
+          </>
+        )}
+
         <p className="text-center text-sm text-gray-400">
           Already have an account? <Link to="/login" className="text-brand-600 font-semibold">Log in</Link>
         </p>
@@ -1146,6 +1174,14 @@ export default function Signup() {
   const [history, setHistory] = useState(['email']);
   const [data, setData] = useState({});
   const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const handleDemo = async () => {
+    await authApi.requestOTP(DEMO_PHONE);
+    await login(DEMO_PHONE, DEMO_OTP);
+    toast.success('Demo mode — welcome!');
+    navigate('/dashboard');
+  };
 
   const update = patch => setData(prev => ({ ...prev, ...patch }));
 
@@ -1205,7 +1241,8 @@ export default function Signup() {
       <div className="flex-1 min-w-0 flex items-start justify-center px-4 sm:px-6 py-6 sm:py-10">
         <div className="w-full max-w-lg">
           <div className="flex justify-center mb-6 lg:hidden"><EventParkLogo size="md" /></div>
-          <CurrentStep data={data} onNext={advance} onBack={goBack} onFinish={finish} />
+          <CurrentStep data={data} onNext={advance} onBack={goBack} onFinish={finish}
+            {...(step === 'email' ? { onDemo: handleDemo } : {})} />
         </div>
       </div>
     </div>
