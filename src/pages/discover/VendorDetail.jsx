@@ -76,8 +76,8 @@ export default function VendorDetail() {
 
       {/* Cover */}
       <div className="relative h-56 sm:h-72 overflow-hidden bg-gray-200">
-        {vendor.coverImage && (
-          <img src={vendor.coverImage} alt={vendor.name} className="w-full h-full object-cover" />
+        {vendor.cover_url && (
+          <img src={vendor.cover_url} alt={vendor.business_name} className="w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
@@ -86,16 +86,16 @@ export default function VendorDetail() {
         {/* Profile card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-md -mt-10 relative z-10 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            {vendor.image ? (
-              <img src={vendor.image} alt={vendor.name} className="w-20 h-20 rounded-2xl border-2 border-white shadow object-cover" />
+            {vendor.avatar_url ? (
+              <img src={vendor.avatar_url} alt={vendor.business_name} className="w-20 h-20 rounded-2xl border-2 border-white shadow object-cover" />
             ) : (
               <div className="w-20 h-20 rounded-2xl border-2 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-2xl shadow">
-                {vendor.name?.[0] ?? 'V'}
+                {vendor.business_name?.[0] ?? 'V'}
               </div>
             )}
             <div className="flex-grow">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-extrabold text-gray-900">{vendor.name}</h1>
+                <h1 className="text-2xl font-extrabold text-gray-900">{vendor.business_name}</h1>
                 {vendor.verified && (
                   <span className="flex items-center gap-1 text-xs text-brand-600 font-semibold bg-brand-50 px-2 py-1 rounded-full">
                     <CheckCircle className="w-3 h-3" />
@@ -105,16 +105,19 @@ export default function VendorDetail() {
               </div>
               <div className="text-sm text-brand-600 font-medium">{vendor.category}</div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
-                {vendor.location && (
-                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{vendor.location}</span>
+                {(vendor.city || vendor.state) && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {[vendor.city, vendor.state].filter(Boolean).join(', ')}
+                  </span>
                 )}
-                {vendor.completedJobs != null && (
-                  <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{vendor.completedJobs} jobs completed</span>
+                {vendor.events_completed > 0 && (
+                  <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{vendor.events_completed} jobs completed</span>
                 )}
-                {vendor.rating != null && (
+                {vendor.rating > 0 && (
                   <span className="flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                    {vendor.rating}{vendor.reviews != null ? ` (${vendor.reviews} reviews)` : ''}
+                    {vendor.rating}{vendor.review_count > 0 ? ` (${vendor.review_count} reviews)` : ''}
                   </span>
                 )}
               </div>
@@ -146,24 +149,28 @@ export default function VendorDetail() {
 
         {activeTab === 'about' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
-            <h2 className="font-bold text-gray-900 mb-3">About {vendor.name}</h2>
-            <p className="text-gray-600 leading-relaxed">{vendor.description}</p>
-            <p className="text-gray-600 leading-relaxed mt-3">
-              With a reputation built on quality, reliability, and exceptional customer service, we've become one of Nigeria's most trusted event service providers. Our team of professionals brings creativity and precision to every event we're part of.
-            </p>
+            <h2 className="font-bold text-gray-900 mb-3">About {vendor.business_name}</h2>
+            {vendor.bio && <p className="text-gray-600 leading-relaxed mb-3">{vendor.bio}</p>}
+            {vendor.tagline && <p className="text-gray-500 italic text-sm">{vendor.tagline}</p>}
+            {!vendor.bio && !vendor.tagline && (
+              <p className="text-gray-400 text-sm">No description added yet.</p>
+            )}
 
             <div className="mt-6 grid sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-                <Phone className="w-5 h-5 text-brand-600" />
-                <div>
-                  <div className="text-xs text-gray-400">Phone</div>
-                  <div className="text-sm font-medium text-gray-800">Sign in to view</div>
-                </div>
-              </div>
+              {vendor.website && (
+                <a href={vendor.website} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                  <Phone className="w-5 h-5 text-brand-600" />
+                  <div>
+                    <div className="text-xs text-gray-400">Website</div>
+                    <div className="text-sm font-medium text-brand-600 truncate">{vendor.website}</div>
+                  </div>
+                </a>
+              )}
               <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
                 <Mail className="w-5 h-5 text-brand-600" />
                 <div>
-                  <div className="text-xs text-gray-400">Email</div>
+                  <div className="text-xs text-gray-400">Contact</div>
                   <div className="text-sm font-medium text-gray-800">Sign in to view</div>
                 </div>
               </div>
@@ -173,16 +180,18 @@ export default function VendorDetail() {
 
         {activeTab === 'portfolio' && (
           <div className="mb-8">
-            {vendor.portfolios && vendor.portfolios.length > 0 ? (
+            {vendor.portfolio && vendor.portfolio.length > 0 ? (
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {vendor.portfolios.map((port, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-md transition">
+                {vendor.portfolio.map((port) => (
+                  <div key={port.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-md transition">
                     <div className="h-48 overflow-hidden">
-                      <img src={port.image} alt={port.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={port.image_url} alt={port.caption || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-800 text-sm">{port.name}</h3>
-                    </div>
+                    {port.caption && (
+                      <div className="p-3">
+                        <p className="text-xs text-gray-500">{port.caption}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -199,12 +208,16 @@ export default function VendorDetail() {
             <h2 className="font-bold text-gray-900 mb-4">Services Offered</h2>
             {vendor.services && vendor.services.length > 0 ? (
               <div className="grid sm:grid-cols-2 gap-3">
-                {vendor.services.map(service => (
-                  <div key={service} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl">
-                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                {vendor.services.map(svc => (
+                  <div key={svc.id} className="flex items-start gap-3 p-4 border border-gray-100 rounded-xl">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-semibold text-gray-900 text-sm">{service}</div>
-                      <Link to="/signup" className="text-xs text-brand-600 hover:underline">Get a quote →</Link>
+                      <div className="font-semibold text-gray-900 text-sm">{svc.name}</div>
+                      {svc.description && <p className="text-xs text-gray-400 mt-0.5">{svc.description}</p>}
+                      <div className="text-xs text-brand-600 font-semibold mt-1">
+                        From ₦{(svc.price_from / 100).toLocaleString()}
+                        {svc.unit ? ` / ${svc.unit}` : ''}
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Shield, CreditCard, Plus, ArrowRight, CheckCircle2, Store,
   TrendingUp, ShoppingBag, Star, Clock, AlertCircle, Wrench,
-  Package, MessageSquare, ChevronRight, Boxes, Ticket,
+  Package, MessageSquare, ChevronRight, Boxes, Ticket, MapPin,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -250,15 +250,25 @@ export default function VendorHome() {
           done: hasInventory,
           color: 'green',
         },
-    {
-      icon: Store,
-      title: 'Complete your storefront',
-      desc: 'Add your logo, cover photo, bio, and gallery so customers can find and trust you.',
-      action: 'Edit storefront',
-      to: '/dashboard/storefront',
-      done: false,
-      color: 'purple',
-    },
+    vendorType === 'product'
+      ? {
+          icon: MapPin,
+          title: 'Add delivery locations',
+          desc: 'Set the states and cities you deliver to so customers can find you in their area.',
+          action: 'Add delivery zones',
+          to: '/dashboard/inventory',
+          done: false,
+          color: 'purple',
+        }
+      : {
+          icon: Store,
+          title: 'Complete your storefront',
+          desc: 'Add your logo, cover photo, bio, and gallery so customers can find and trust you.',
+          action: 'Edit storefront',
+          to: '/dashboard/storefront',
+          done: false,
+          color: 'purple',
+        },
   ];
 
   return (

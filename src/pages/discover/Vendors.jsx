@@ -115,18 +115,18 @@ export default function DiscoverVendors() {
               <Link key={vendor.id} to={`/discover/vendors/${vendor.id}`}
                 className="group bg-white rounded-3xl overflow-hidden border border-gray-100 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-50 transition-all duration-300">
                 <div className="relative h-36 overflow-hidden bg-ep-blue-light">
-                  {vendor.coverImage && (
-                    <img src={vendor.coverImage} alt={vendor.name}
+                  {vendor.cover_url && (
+                    <img src={vendor.cover_url} alt={vendor.business_name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-4 translate-y-1/2">
-                    {vendor.image ? (
-                      <img src={vendor.image} alt={vendor.name}
+                    {vendor.avatar_url ? (
+                      <img src={vendor.avatar_url} alt={vendor.business_name}
                         className="w-14 h-14 rounded-2xl border-2 border-white object-cover shadow-lg" />
                     ) : (
                       <div className="w-14 h-14 rounded-2xl border-2 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xl shadow-lg">
-                        {vendor.name?.[0] ?? 'V'}
+                        {vendor.business_name?.[0] ?? 'V'}
                       </div>
                     )}
                   </div>
@@ -134,30 +134,30 @@ export default function DiscoverVendors() {
 
                 <div className="pt-10 px-5 pb-5">
                   <div className="flex items-start justify-between gap-2 mb-0.5">
-                    <h3 className="font-bold text-ep-navy text-sm line-clamp-1">{vendor.name}</h3>
+                    <h3 className="font-bold text-ep-navy text-sm line-clamp-1">{vendor.business_name}</h3>
                     {vendor.verified && <CheckCircle className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />}
                   </div>
                   <div className="text-xs text-brand-600 font-semibold mb-3">{vendor.category}</div>
 
                   <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
-                    {vendor.location && (
-                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{vendor.location}</span>
+                    {vendor.city && (
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{vendor.city}{vendor.state ? `, ${vendor.state}` : ''}</span>
                     )}
-                    {vendor.completedJobs != null && (
-                      <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{vendor.completedJobs} jobs</span>
+                    {vendor.events_completed != null && vendor.events_completed > 0 && (
+                      <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{vendor.events_completed} jobs</span>
                     )}
                   </div>
 
-                  {vendor.description && (
-                    <p className="text-xs text-gray-400 line-clamp-2 mb-4">{vendor.description}</p>
+                  {vendor.bio && (
+                    <p className="text-xs text-gray-400 line-clamp-2 mb-4">{vendor.bio}</p>
                   )}
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-ep-orange text-ep-orange" />
                       <span className="text-xs font-bold text-ep-navy">{vendor.rating ?? '—'}</span>
-                      {vendor.reviews != null && (
-                        <span className="text-xs text-gray-400">({vendor.reviews})</span>
+                      {vendor.review_count != null && vendor.review_count > 0 && (
+                        <span className="text-xs text-gray-400">({vendor.review_count})</span>
                       )}
                     </div>
                     <span className="text-xs font-bold text-brand-600 group-hover:underline">View Profile →</span>

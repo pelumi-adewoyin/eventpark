@@ -148,6 +148,40 @@ export const vendors = {
   addService: (vendorId, body) => request('POST', `/vendors/${vendorId}/services`, body),
 };
 
+// ─── Vendor Dashboard (authenticated vendor routes) ───────────────────────────
+
+export const vendorDash = {
+  // Profile
+  getMe: () => request('GET', '/vendor/me'),
+  updateMe: (body) => request('PATCH', '/vendor/me', body),
+  // Products (product vendor)
+  listProducts: () => request('GET', '/vendor/products'),
+  createProduct: (body) => request('POST', '/vendor/products', body),
+  updateProduct: (id, body) => request('PATCH', `/vendor/products/${id}`, body),
+  toggleProduct: (id) => request('PATCH', `/vendor/products/${id}/toggle`, {}),
+  deleteProduct: (id) => request('DELETE', `/vendor/products/${id}`),
+  // Services (service vendor)
+  listServices: () => request('GET', '/vendor/services'),
+  createService: (body) => request('POST', '/vendor/services', body),
+  updateService: (id, body) => request('PATCH', `/vendor/services/${id}`, body),
+  toggleService: (id) => request('PATCH', `/vendor/services/${id}/toggle`, {}),
+  deleteService: (id) => request('DELETE', `/vendor/services/${id}`),
+  // Orders (product vendor)
+  listOrders: () => request('GET', '/vendor/orders'),
+  updateOrderStatus: (id, body) => request('PATCH', `/vendor/orders/${id}/status`, body),
+  // Bookings (service vendor)
+  listBookings: () => request('GET', '/vendor/bookings'),
+  acceptBooking: (id) => request('PATCH', `/vendor/bookings/${id}/accept`, {}),
+  declineBooking: (id) => request('PATCH', `/vendor/bookings/${id}/decline`, {}),
+  // Wallet
+  getWallet: () => request('GET', '/vendor/wallet'),
+  listTransactions: () => request('GET', '/vendor/transactions'),
+  withdraw: (body) => request('POST', '/vendor/withdraw', body),
+  // Bank accounts
+  listBankAccounts: () => request('GET', '/vendor/bank-accounts'),
+  addBankAccount: (body) => request('POST', '/vendor/bank-accounts', body),
+};
+
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
 export const bookings = {
