@@ -154,7 +154,7 @@ function normalizeUser(u) {
     onboarded: u.onboarding_done,
     walletBalance: u.wallet?.balance || 0,
     walletEscrow: u.wallet?.escrow_held || 0,
-    companyName: u.company_name || null,
+    companyName: u.org_name || u.company_name || null,
     orgId: u.org_id || null,
   };
 }

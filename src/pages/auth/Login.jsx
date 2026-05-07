@@ -124,9 +124,12 @@ export default function Login({ type = 'personal' }) {
       // dashboard loads without a separate onboarding step.
       if (isB && !rawUser?.role) {
         await usersApi.completeOnboarding({ role: 'corporate' });
-        // POST /orgs creates the org AND the org_members row that
-        // GET /orgs/me requires. Fall through silently if it already exists.
-        try { await orgsApi.create({ name: 'My Company' }); } catch {}
+        // Only create an org if the user doesn't already have one.
+        // Use the user's name as a sensible default — they can update it in settings.
+        if (!rawUser?.org_id) {
+          const orgName = rawUser?.full_name ? `${rawUser.full_name}'s Company` : 'My Company';
+          try { await orgsApi.create({ name: orgName }); } catch {}
+        }
         await refreshUser();
       }
 

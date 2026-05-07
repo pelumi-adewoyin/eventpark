@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, MapPin, Calendar, Filter, X, ChevronDown,
   TrendingUp, Clock, ArrowUpDown, Tag, SlidersHorizontal
 } from 'lucide-react';
+import { discover } from '../../lib/api';
 
 export const EVENTS = [
   {
@@ -182,6 +183,32 @@ export default function DiscoverEvents() {
   const [priceFilter, setPriceFilter] = useState('');
   const [sort, setSort] = useState('trending');
   const [showFilters, setShowFilters] = useState(false);
+  const [apiEvents, setApiEvents] = useState([]);
+
+  // Fetch published events from the backend and merge with static list
+  useEffect(() => {
+    discover.events().then(data => {
+      const list = Array.isArray(data) ? data : (data?.events ?? []);
+      setApiEvents(list.map(ev => ({
+        id: ev.id,
+        slug: ev.id,
+        title: ev.title,
+        tagline: ev.description || '',
+        category: ev.event_type || 'Event',
+        date: ev.start_at ? ev.start_at.split('T')[0] : '',
+        time: ev.start_at ? new Date(ev.start_at).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' }) : '',
+        venue: ev.venue_name || '',
+        city: ev.venue_city || '',
+        image: ev.cover_url || '',
+        tags: [],
+        lowestPrice: ev.ticket_price || 0,
+        highestPrice: ev.ticket_price || 0,
+        capacity: ev.max_guests || 0,
+        sold: ev.guest_count || 0,
+        fromApi: true,
+      })));
+    }).catch(() => {});
+  }, []);
 
   const toggleCity = (city) => setCities(prev => prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]);
   const clearAll = () => { setSearch(''); setSelectedCategory('All'); setCities([]); setPriceFilter(''); setSort('trending'); };
@@ -189,33 +216,10 @@ export default function DiscoverEvents() {
   const filtered = useMemo(() => {
     let list = [...EVENTS];
 
-    // Also pick up any events published via CreateEvent
-    try {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('ep_event_')) {
-          const evt = JSON.parse(localStorage.getItem(key));
-          if (evt && evt.event_name && !list.find(e => e.slug === evt.slug)) {
-            list.push({
-              id: evt.slug,
-              slug: evt.slug,
-              title: evt.event_name,
-              tagline: evt.tagline || '',
-              category: evt.public_event_type || 'Event',
-              date: evt.event_date || '',
-              time: evt.event_start_time || '',
-              venue: evt.venue_name || '',
-              city: evt.venue_city || '',
-              image: '',
-              tags: evt.event_tags || [],
-              lowestPrice: Math.min(...(evt.tickets || [{ ticket_price: 0 }]).map(t => t.ticket_kind === 'Free' ? 0 : Number(t.ticket_price) || 0)),
-              highestPrice: Math.max(...(evt.tickets || [{ ticket_price: 0 }]).map(t => Number(t.ticket_price) || 0)),
-              capacity: Number(evt.event_capacity) || 0,
-              sold: 0,
-            });
-          }
-        }
-      });
-    } catch (_) {}
+    // Merge in live published events from the API (deduplicate by id)
+    apiEvents.forEach(ev => {
+      if (!list.find(e => e.id === ev.id)) list.push(ev);
+    });
 
     if (search) {
       const q = search.toLowerCase();
@@ -241,7 +245,7 @@ export default function DiscoverEvents() {
     else list.sort((a, b) => (b.sold / (b.capacity || 1)) - (a.sold / (a.capacity || 1)));
 
     return list;
-  }, [search, selectedCategory, cities, priceFilter, sort]);
+  }, [search, selectedCategory, cities, priceFilter, sort, apiEvents]);
 
   const hasActiveFilters = cities.length > 0 || priceFilter !== '' || selectedCategory !== 'All';
 

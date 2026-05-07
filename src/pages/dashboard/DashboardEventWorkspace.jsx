@@ -1156,6 +1156,239 @@ function CheckInTab({ eventData, eventId }) {
   );
 }
 
+// ─── TICKET TYPES ─────────────────────────────────────────────────────────────
+const TICKET_TYPES = ['General Admission', 'VIP', 'VVIP', 'Early Bird', 'Table', 'Free'];
+
+// ─── TICKETED GUESTS TAB (public/ticketed events) ─────────────────────────────
+function AddTicketedGuestModal({ onClose, onAdd }) {
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', ticketType: 'General Admission' });
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  function handleSubmit() {
+    if (!form.firstName || !form.email) { toast.error('First name and email are required.'); return; }
+    onAdd({
+      id: Date.now(),
+      name: `${form.firstName} ${form.lastName}`.trim(),
+      email: form.email,
+      phone: form.phone,
+      ticketType: form.ticketType,
+      purchaseDate: new Date().toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }),
+      checkedIn: false,
+      status: 'Confirmed',
+    });
+    onClose();
+    toast.success('Guest added to list.');
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="font-bold text-gray-900">Add guest manually</h3>
+          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">First name *</label>
+              <input value={form.firstName} onChange={e => set('firstName', e.target.value)} placeholder="Ada"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1 block">Last name</label>
+              <input value={form.lastName} onChange={e => set('lastName', e.target.value)} placeholder="Okonkwo"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Email *</label>
+            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="ada@email.com"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Phone</label>
+            <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+234 801 234 5678"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1 block">Ticket type</label>
+            <select value={form.ticketType} onChange={e => set('ticketType', e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-400 bg-white">
+              {TICKET_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <button onClick={handleSubmit} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors mt-1">
+            Add guest
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TicketedGuestsTab({ initialGuests = [] }) {
+  const [guests, setGuests] = useState(initialGuests);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('All');
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    if (initialGuests.length > 0) setGuests(initialGuests);
+  }, [initialGuests]);
+
+  const ticketTypes = ['All', ...new Set(guests.map(g => g.ticketType).filter(Boolean))];
+
+  const filtered = guests.filter(g => {
+    const q = search.toLowerCase();
+    const matchSearch = !search || g.name?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q) || g.phone?.includes(search);
+    const matchType = filterType === 'All' || g.ticketType === filterType;
+    return matchSearch && matchType;
+  });
+
+  function toggleCheckIn(id) {
+    setGuests(prev => prev.map(g => g.id === id ? { ...g, checkedIn: !g.checkedIn } : g));
+    toast.success('Check-in status updated');
+  }
+
+  function handleAdd(guest) {
+    setGuests(prev => [...prev, guest]);
+  }
+
+  const stats = [
+    { label: 'Total guests',  val: guests.length,                                   cls: 'text-gray-900' },
+    { label: 'Checked in',    val: guests.filter(g => g.checkedIn).length,           cls: 'text-green-600' },
+    { label: 'Not checked in',val: guests.filter(g => !g.checkedIn).length,          cls: 'text-amber-600' },
+    { label: 'Check-in rate', val: guests.length > 0 ? `${Math.round(guests.filter(g => g.checkedIn).length / guests.length * 100)}%` : '0%', cls: 'text-brand-600' },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className={`text-2xl font-extrabold ${s.cls}`}>{s.val}</div>
+            <div className="text-xs text-gray-400 mt-0.5">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Action bar */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors">
+          <Plus className="w-4 h-4" /> Add guest
+        </button>
+        <button onClick={() => toast.success('Guest list exported!')}
+          className="flex items-center gap-1.5 border border-gray-200 hover:border-brand-300 text-gray-600 hover:text-brand-600 text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
+        <button onClick={() => toast.success('Printing attendee list…')}
+          className="flex items-center gap-1.5 border border-gray-200 hover:border-brand-300 text-gray-600 hover:text-brand-600 text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+          <Printer className="w-4 h-4" /> Print list
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input type="text" placeholder="Search name, email, or phone…" value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-brand-400 placeholder:text-gray-400" />
+            </div>
+            <div className="flex gap-1 bg-gray-100 rounded-xl p-1 flex-shrink-0 overflow-x-auto">
+              {ticketTypes.map(t => (
+                <button key={t} onClick={() => setFilterType(t)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                    filterType === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/70">
+                <th className="text-left text-xs font-semibold text-gray-400 px-4 py-3">Guest</th>
+                <th className="text-left text-xs font-semibold text-gray-400 px-4 py-3 hidden sm:table-cell">Phone</th>
+                <th className="text-left text-xs font-semibold text-gray-400 px-4 py-3">Ticket</th>
+                <th className="text-left text-xs font-semibold text-gray-400 px-4 py-3 hidden md:table-cell">Date</th>
+                <th className="text-left text-xs font-semibold text-gray-400 px-4 py-3">Check-in</th>
+                <th className="px-4 py-3 w-10" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((guest, idx) => (
+                <tr key={guest.id}
+                  className={`border-b border-gray-50 hover:bg-brand-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <AvatarCircle name={guest.name || guest.email} index={idx} />
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 text-sm truncate">{guest.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{guest.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="text-xs text-gray-500">{guest.phone || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-semibold px-2.5 py-1 bg-brand-50 text-brand-700 rounded-full">
+                      {guest.ticketType || '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="text-xs text-gray-400">{guest.purchaseDate || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => toggleCheckIn(guest.id)}
+                      className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all ${
+                        guest.checkedIn
+                          ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200'
+                      }`}>
+                      {guest.checkedIn ? <><CheckCircle className="w-3 h-3" /> In</> : <><Circle className="w-3 h-3" /> Check in</>}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-16">
+                    <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm font-medium">No guests yet</p>
+                    <p className="text-gray-300 text-xs mt-1">Guests who purchase or reserve tickets will appear here</p>
+                    <button onClick={() => setShowAddModal(true)}
+                      className="mt-4 inline-flex items-center gap-1.5 bg-brand-600 text-white text-sm font-bold px-4 py-2 rounded-xl hover:bg-brand-700 transition-colors">
+                      <Plus className="w-4 h-4" /> Add guest manually
+                    </button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {showAddModal && <AddTicketedGuestModal onClose={() => setShowAddModal(false)} onAdd={handleAdd} />}
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 const TABS = ['Overview', 'Guests', 'Budget', 'To-dos', 'Check-in'];
@@ -1275,7 +1508,11 @@ export default function DashboardEventWorkspace() {
 
       {/* Tab content */}
       {activeTab === 'Overview'  && <OverviewTab eventData={eventData} budgetSummary={budgetSummary} />}
-      {activeTab === 'Guests'    && <GuestsTab initialGuests={guestList} />}
+      {activeTab === 'Guests'    && (
+        eventData?.visibility === 'public'
+          ? <TicketedGuestsTab initialGuests={guestList} />
+          : <GuestsTab initialGuests={guestList} />
+      )}
       {activeTab === 'Budget'    && <BudgetTab budgetLines={budgetLines} budgetSummary={budgetSummary} />}
       {activeTab === 'To-dos'    && <TodosTab />}
       {activeTab === 'Check-in'  && <CheckInTab eventData={eventData} eventId={id} />}
