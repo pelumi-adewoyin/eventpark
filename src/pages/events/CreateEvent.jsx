@@ -414,6 +414,11 @@ function StepPublish({ form, goToBasics, goToTickets }) {
           ? `${form.event_date}T${form.event_start_time}:00`
           : `${form.event_date}T00:00:00`;
       }
+      const lowestPrice = (form.tickets || []).reduce((min, t) => {
+        const p = Number(t.ticket_price) || 0;
+        return p > 0 ? Math.min(min, p) : min;
+      }, Infinity);
+
       const result = await eventsApi.create({
         title: form.event_name || 'My Event',
         event_type: PUBLIC_TYPE_SLUG[form.public_event_type] || 'other',
@@ -424,9 +429,24 @@ function StepPublish({ form, goToBasics, goToTickets }) {
         start_at: startAt,
         max_guests: form.event_capacity ? parseInt(form.event_capacity) : undefined,
         budget_total: 0,
+        ticket_price: lowestPrice === Infinity ? 0 : lowestPrice * 100, // kobo
         visibility: 'public',
       });
-      // Attempt to publish immediately (requires KYC tier 1+)
+
+      // Save ticket tiers to DB
+      if (result?.id && (form.tickets || []).length > 0) {
+        try {
+          await eventsApi.saveTickets(result.id, (form.tickets || []).map(t => ({
+            name: t.ticket_name || 'General',
+            description: t.ticket_description || undefined,
+            price: t.ticket_kind === 'Free' ? 0 : (Number(t.ticket_price) || 0) * 100, // kobo
+            quantity: Number(t.ticket_quantity) || 0,
+            kind: t.ticket_kind === 'Free' ? 'free' : t.ticket_kind === 'Donation' ? 'donation' : 'paid',
+          })));
+        } catch (e) { console.warn('ticket save failed', e); }
+      }
+
+      // Publish immediately
       if (result?.id) {
         try { await eventsApi.publish(result.id); } catch {}
       }

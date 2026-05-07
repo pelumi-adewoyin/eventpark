@@ -109,6 +109,8 @@ export const events = {
   update: (id, body) => request('PATCH', `/events/${id}`, body),
   publish: (id) => request('POST', `/events/${id}/publish`),
   delete: (id) => request('DELETE', `/events/${id}`),
+  saveTickets: (id, tiers) => request('POST', `/events/${id}/tickets`, { tiers }),
+  listTickets: (id) => request('GET', `/events/${id}/tickets`),
 };
 
 // ─── Guests ───────────────────────────────────────────────────────────────────
@@ -160,6 +162,8 @@ export const discover = {
     const q = new URLSearchParams(params).toString();
     return request('GET', `/discover/events${q ? `?${q}` : ''}`);
   },
+  getEvent: (id) => request('GET', `/discover/events/${id}`),
+  getEventTickets: (id) => request('GET', `/discover/events/${id}/tickets`),
   vendors: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request('GET', `/discover/vendors${q ? `?${q}` : ''}`);
