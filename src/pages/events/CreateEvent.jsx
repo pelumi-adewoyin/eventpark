@@ -38,6 +38,14 @@ const PUBLIC_EVENT_TYPES = [
   'Meet-up', 'Festival', 'Comedy show', 'Theatre', 'Brand activation', 'Other',
 ];
 
+// Maps display labels → DB enum slug
+const PUBLIC_TYPE_SLUG = {
+  'Concert': 'concert', 'DJ night': 'dj_night', 'Workshop': 'workshop',
+  'Conference': 'conference', 'Pop-up dinner': 'popup', 'Meet-up': 'meetup',
+  'Festival': 'festival', 'Comedy show': 'comedy_show', 'Theatre': 'theatre',
+  'Brand activation': 'brand_activation', 'Other': 'other',
+};
+
 const ALL_TAGS = ['Music', 'Tech', 'Wellness', 'Food & drink', 'Education', 'Networking', 'Comedy', 'Family-friendly', '18+', 'Outdoor'];
 
 const TICKET_KINDS = ['Paid', 'Free', 'Donation'];
@@ -408,7 +416,7 @@ function StepPublish({ form, goToBasics, goToTickets }) {
       }
       const result = await eventsApi.create({
         title: form.event_name || 'My Event',
-        event_type: form.public_event_type || 'other',
+        event_type: PUBLIC_TYPE_SLUG[form.public_event_type] || 'other',
         description: form.event_description || undefined,
         venue_name: form.venue_name || undefined,
         venue_address: form.venue_address || undefined,
