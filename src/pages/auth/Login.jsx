@@ -98,7 +98,11 @@ export default function Login({ type = 'personal' }) {
       setStep('otp');
     } catch (err) {
       if (err?.status === 404) {
+        // Phone not registered — show inline sign-up prompt
         setNotFound(true);
+      } else if (!err?.status) {
+        // Network failure (no response from server)
+        toast.error('Could not reach the server. Check your connection and try again.');
       } else {
         toast.error(err?.message || 'Could not send code. Try again.');
       }
