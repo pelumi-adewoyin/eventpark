@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Plus, Search, Wrench, Edit2, Eye, EyeOff,
-  ArrowRight, Upload, ChevronDown, X, Check, Clock,
+  Plus, Search, Wrench, Edit2, Eye, EyeOff, Trash2,
+  ArrowRight, Upload, ChevronDown, X, Check, Clock, Loader2,
 } from 'lucide-react';
+import { vendorDash } from '../../../lib/api';
+import toast from 'react-hot-toast';
 
 const SERVICE_CATEGORIES = [
   { id: 'photography', label: 'Photography' },
@@ -48,15 +50,13 @@ function Inp({ label, error, ...props }) {
 // ─── Add Service Modal ────────────────────────────────────────────────────────
 
 function AddServiceModal({ onClose, onSave }) {
-  const [step, setStep] = useState(1); // 1: basics, 2: pricing, 3: availability, 4: portfolio
+  const [step, setStep] = useState(1); // 1: basics, 2: pricing, 3: availability
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', category: '', description: '',
     pricing_model: '', base_price: '', price_unit: '',
     min_notice_hours: '24', max_advance_days: '90',
-    blackout_dates: [],
-    portfolio_urls: [],
     response_time: '2',
-    is_active: true,
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -64,13 +64,41 @@ function AddServiceModal({ onClose, onSave }) {
     { num: 1, label: 'Basics' },
     { num: 2, label: 'Pricing' },
     { num: 3, label: 'Availability' },
-    { num: 4, label: 'Portfolio' },
   ];
 
   const canProceed = () => {
     if (step === 1) return form.name && form.category;
     if (step === 2) return form.pricing_model && (form.pricing_model === 'negotiable' || form.base_price);
     return true;
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const priceFrom = form.pricing_model === 'negotiable' ? 0 : Math.round(parseFloat(form.base_price || 0) * 100);
+      const body = {
+        name: form.name,
+        category: form.category || null,
+        description: form.description || null,
+        price_from: priceFrom,
+        pricing_model: form.pricing_model,
+        unit: form.price_unit || null,
+        min_notice_hours: parseInt(form.min_notice_hours) || 24,
+        max_advance_days: parseInt(form.max_advance_days) || 90,
+        response_time_hrs: parseInt(form.response_time) || 2,
+      };
+      const newService = await vendorDash.createService(body);
+      toast.success('Service added!');
+      onSave(newService);
+    } catch (err) {
+      if (err?.status === 403) {
+        toast.error('Tier 1 limit: upgrade to add more services');
+      } else {
+        toast.error(err?.message || 'Failed to add service');
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -166,7 +194,7 @@ function AddServiceModal({ onClose, onSave }) {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
-                <Inp label="Typical response time (h)" type="number" placeholder="2" value={form.response_time} onChange={e => set('response_time', e.target.value)} />
+                <Inp label="Response time (hrs)" type="number" placeholder="2" value={form.response_time} onChange={e => set('response_time', e.target.value)} />
               </div>
               <div>
                 <Lbl>Max advance booking (days)</Lbl>
@@ -179,21 +207,9 @@ function AddServiceModal({ onClose, onSave }) {
                 </div>
               </div>
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs text-blue-700 font-medium">📅 A live calendar to block specific dates will be available in your Calendar page after setup.</p>
+                <p className="text-xs text-blue-700 font-medium">📅 Use the Calendar page to block specific dates after publishing.</p>
               </div>
             </>
-          )}
-
-          {step === 4 && (
-            <div>
-              <Lbl>Portfolio photos / videos</Lbl>
-              <p className="text-xs text-gray-400 mb-3">Upload samples of your work — this is the most viewed part of your listing.</p>
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-brand-300 cursor-pointer transition-colors">
-                <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">Upload portfolio photos (up to 20)</p>
-                <p className="text-xs text-gray-300 mt-1">JPEG, PNG or MP4 · max 20MB each</p>
-              </div>
-            </div>
           )}
         </div>
 
@@ -205,16 +221,16 @@ function AddServiceModal({ onClose, onSave }) {
               Back
             </button>
           )}
-          {step < 4 ? (
+          {step < 3 ? (
             <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canProceed()}
               className="flex-1 py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-1.5">
               Next <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
-            <button type="button" onClick={() => onSave(form)}
-              disabled={!form.name}
-              className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl text-sm font-bold transition-colors">
-              Publish service
+            <button type="button" onClick={handleSave}
+              disabled={saving || !form.name}
+              className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Publish service'}
             </button>
           )}
         </div>
@@ -225,21 +241,49 @@ function AddServiceModal({ onClose, onSave }) {
 
 // ─── Service card ─────────────────────────────────────────────────────────────
 
-function ServiceCard({ service, onToggle }) {
-  const pricingLabel = {
-    fixed: `₦${parseInt(service.base_price || 0).toLocaleString()}`,
-    starting_from: `From ₦${parseInt(service.base_price || 0).toLocaleString()}`,
-    per_hour: `₦${parseInt(service.base_price || 0).toLocaleString()}/hr`,
-    per_day: `₦${parseInt(service.base_price || 0).toLocaleString()}/day`,
-    negotiable: 'Negotiable',
-  }[service.pricing_model] || '—';
+function ServiceCard({ service, onToggle, onDelete }) {
+  const [toggling, setToggling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const priceDisplay = () => {
+    const naira = (service.price_from / 100).toLocaleString();
+    switch (service.pricing_model) {
+      case 'fixed': return `₦${naira}`;
+      case 'starting_from': return `From ₦${naira}`;
+      case 'per_hour': return `₦${naira}/hr`;
+      case 'per_day': return `₦${naira}/day`;
+      case 'negotiable': return 'Negotiable';
+      default: return service.price_from > 0 ? `₦${naira}` : '—';
+    }
+  };
+
+  const handleToggle = async () => {
+    setToggling(true);
+    try {
+      await onToggle(service.id);
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this service? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await onDelete(service.id);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const catLabel = SERVICE_CATEGORIES.find(c => c.id === service.category)?.label || service.category;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-all">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <h3 className="text-sm font-bold text-ep-navy">{service.name}</h3>
-          <p className="text-xs text-gray-400 mt-0.5">{service.category}</p>
+          {catLabel && <p className="text-xs text-gray-400 mt-0.5">{catLabel}</p>}
         </div>
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${service.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
           {service.is_active ? 'Live' : 'Draft'}
@@ -249,14 +293,17 @@ function ServiceCard({ service, onToggle }) {
         <p className="text-xs text-gray-500 line-clamp-2 mb-3">{service.description}</p>
       )}
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-sm font-extrabold text-ep-navy">{pricingLabel}</span>
+        <span className="text-sm font-extrabold text-ep-navy">{priceDisplay()}</span>
         <div className="flex gap-1">
-          <button type="button" onClick={() => onToggle(service.id)}
-            className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-            {service.is_active ? <EyeOff className="w-3.5 h-3.5 text-gray-500" /> : <Eye className="w-3.5 h-3.5 text-gray-500" />}
+          <button type="button" onClick={handleToggle} disabled={toggling}
+            title={service.is_active ? 'Hide service' : 'Make live'}
+            className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50">
+            {toggling ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" /> : service.is_active ? <EyeOff className="w-3.5 h-3.5 text-gray-500" /> : <Eye className="w-3.5 h-3.5 text-gray-500" />}
           </button>
-          <button className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-            <Edit2 className="w-3.5 h-3.5 text-gray-500" />
+          <button type="button" onClick={handleDelete} disabled={deleting}
+            title="Delete service"
+            className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-50">
+            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" /> : <Trash2 className="w-3.5 h-3.5 text-gray-500" />}
           </button>
         </div>
       </div>
@@ -268,16 +315,40 @@ function ServiceCard({ service, onToggle }) {
 
 export default function VendorServices() {
   const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
 
-  const saveService = (form) => {
-    setServices(prev => [...prev, { ...form, id: Date.now().toString() }]);
+  // Load from API on mount
+  useEffect(() => {
+    vendorDash.listServices()
+      .then(data => setServices(data || []))
+      .catch(() => toast.error('Failed to load services'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = (newService) => {
+    setServices(prev => [newService, ...prev]);
     setShowModal(false);
   };
 
-  const toggleService = (id) => {
-    setServices(prev => prev.map(s => s.id === id ? { ...s, is_active: !s.is_active } : s));
+  const handleToggle = async (id) => {
+    try {
+      const result = await vendorDash.toggleService(id);
+      setServices(prev => prev.map(s => s.id === id ? { ...s, is_active: result.is_active } : s));
+    } catch {
+      toast.error('Failed to update service');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await vendorDash.deleteService(id);
+      setServices(prev => prev.filter(s => s.id !== id));
+      toast.success('Service deleted');
+    } catch {
+      toast.error('Failed to delete service');
+    }
   };
 
   const filtered = services.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()));
@@ -303,7 +374,11 @@ export default function VendorServices() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <Wrench className="w-10 h-10 text-gray-200 mx-auto mb-3" />
           <p className="text-sm font-semibold text-gray-400">No services yet</p>
@@ -315,11 +390,13 @@ export default function VendorServices() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(s => <ServiceCard key={s.id} service={s} onToggle={toggleService} />)}
+          {filtered.map(s => (
+            <ServiceCard key={s.id} service={s} onToggle={handleToggle} onDelete={handleDelete} />
+          ))}
         </div>
       )}
 
-      {showModal && <AddServiceModal onClose={() => setShowModal(false)} onSave={saveService} />}
+      {showModal && <AddServiceModal onClose={() => setShowModal(false)} onSave={handleSave} />}
     </div>
   );
 }
