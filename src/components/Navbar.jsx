@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -23,8 +23,21 @@ const dashboardRoutes = { diy: '/dashboard', planner: '/planner', corporate: '/c
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
+  const discoverRef = useRef(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  // Close dropdown when clicking anywhere outside it
+  useEffect(() => {
+    if (!discoverOpen) return;
+    const handler = (e) => {
+      if (discoverRef.current && !discoverRef.current.contains(e.target)) {
+        setDiscoverOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [discoverOpen]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 shadow-sm">
@@ -37,26 +50,30 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-7">
             {navLinks.map((link) =>
               link.children ? (
-                <div key={link.label} className="relative"
-                  onMouseEnter={() => setDiscoverOpen(true)}
-                  onMouseLeave={() => setDiscoverOpen(false)}
-                >
-                  <button className="flex items-center gap-1 text-gray-600 hover:text-brand-600 font-medium text-sm transition-colors">
+                <div key={link.label} className="relative" ref={discoverRef}>
+                  <button
+                    onClick={() => setDiscoverOpen(o => !o)}
+                    className="flex items-center gap-1 text-gray-600 hover:text-brand-600 font-medium text-sm transition-colors"
+                  >
                     {link.label}
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${discoverOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${discoverOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {discoverOpen && (
-                    <div className="absolute top-full left-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
-                      {link.children.map((child) => (
-                        <Link
-                          key={child.label}
-                          to={child.href}
-                          className="flex flex-col px-4 py-3 rounded-xl hover:bg-ep-blue-light transition-colors group"
-                        >
-                          <span className="font-semibold text-ep-navy text-sm group-hover:text-brand-600">{child.label}</span>
-                          <span className="text-gray-400 text-xs mt-0.5">{child.desc}</span>
-                        </Link>
-                      ))}
+                    // pt-2 bridges the visual gap so the panel feels connected to the button
+                    <div className="absolute top-full left-0 pt-2 w-64">
+                      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-2">
+                        {link.children.map((child) => (
+                          <Link
+                            key={child.label}
+                            to={child.href}
+                            onClick={() => setDiscoverOpen(false)}
+                            className="flex flex-col px-4 py-3 rounded-xl hover:bg-ep-blue-light transition-colors group"
+                          >
+                            <span className="font-semibold text-ep-navy text-sm group-hover:text-brand-600">{child.label}</span>
+                            <span className="text-gray-400 text-xs mt-0.5">{child.desc}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
