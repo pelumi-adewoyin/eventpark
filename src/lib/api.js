@@ -45,20 +45,26 @@ async function request(method, path, body, opts = {}) {
     ...opts,
   });
 
-  // Auto-refresh on 401
-  if (res.status === 401 && !opts._retry) {
+  // Auto-refresh on 401 — but NOT for public auth routes (those 401s mean
+  // "wrong credentials", not "expired token") and NOT if already retried.
+  const isAuthRoute = path.startsWith('/auth/');
+  if (res.status === 401 && !opts._retry && !isAuthRoute) {
     try {
       await refreshAccessToken();
       return request(method, path, body, { ...opts, _retry: true });
     } catch {
       clearTokens();
-      window.location.href = '/login';
-      throw new Error('session expired');
+      // Only redirect to login if we're not already there
+      const onAuthPage = window.location.pathname.startsWith('/login') ||
+                         window.location.pathname.startsWith('/signup') ||
+                         window.location.pathname.startsWith('/business');
+      if (!onAuthPage) window.location.href = '/login';
+      throw new Error('Your session has expired. Please log in again.');
     }
   }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error || 'request failed'), { status: res.status, data });
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Something went wrong'), { status: res.status, data });
   return data;
 }
 
