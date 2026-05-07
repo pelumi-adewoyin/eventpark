@@ -252,7 +252,7 @@ function StepPhone({ data, onNext }) {
         <Btn onClick={submit} loading={loading}>Send verification code <ArrowRight className="w-4 h-4" /></Btn>
         <p className="text-center text-sm text-gray-400">
           Already have an account?{' '}
-          <Link to="/login" className="text-brand-600 font-semibold">Log in</Link>
+          <Link to="/vendor/login" className="text-brand-600 font-semibold">Log in</Link>
         </p>
       </div>
     </div>

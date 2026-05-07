@@ -314,7 +314,7 @@ export default function VendorLanding() {
           </Link>
           <p className="text-white/30 text-xs mt-5">
             Already a vendor?{' '}
-            <Link to="/login" className="underline hover:text-white/60 transition-colors">Sign in</Link>
+            <Link to="/vendor/login" className="underline hover:text-white/60 transition-colors">Sign in</Link>
             {' '}· Questions?{' '}
             <a href="mailto:vendors@eventpark.ng" className="underline hover:text-white/60 transition-colors">vendors@eventpark.ng</a>
           </p>

@@ -74,6 +74,7 @@ const DEMO_DISPLAY = '0000000000'; // what the input shows
 
 export default function Login({ type = 'personal' }) {
   const isB = type === 'business';
+  const isV = type === 'vendor';
   const [step, setStep] = useState('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -120,12 +121,8 @@ export default function Login({ type = 'personal' }) {
       const rawUser = await login(resolvedPhone, val);
 
       // Business login: ensure the user has a corporate role + an org.
-      // New users arrive with role=null; set both now so the corporate
-      // dashboard loads without a separate onboarding step.
       if (isB && !rawUser?.role) {
         await usersApi.completeOnboarding({ role: 'corporate' });
-        // Only create an org if the user doesn't already have one.
-        // Use the user's name as a sensible default — they can update it in settings.
         if (!rawUser?.org_id) {
           const orgName = rawUser?.full_name ? `${rawUser.full_name}'s Company` : 'My Company';
           try { await orgsApi.create({ name: orgName }); } catch {}
@@ -173,25 +170,43 @@ export default function Login({ type = 'personal' }) {
   return (
     <div className="min-h-screen bg-ep-blue-light flex pt-16 overflow-x-hidden">
       {/* Left brand panel */}
-      <div className="hidden lg:flex flex-col justify-between px-12 py-14 bg-ep-navy relative overflow-hidden w-[420px] flex-shrink-0">
+      <div className={`hidden lg:flex flex-col justify-between px-12 py-14 relative overflow-hidden w-[420px] flex-shrink-0 ${isV ? 'bg-green-900' : 'bg-ep-navy'}`}>
         <div className="absolute inset-0 dot-pattern-white opacity-20" />
-        <div className="absolute -bottom-32 -left-20 w-80 h-80 bg-brand-600 rounded-full opacity-20 blur-3xl" />
-        <div className="absolute top-10 right-0 w-60 h-60 bg-ep-orange rounded-full opacity-10 blur-3xl" />
+        <div className={`absolute -bottom-32 -left-20 w-80 h-80 rounded-full opacity-20 blur-3xl ${isV ? 'bg-green-400' : 'bg-brand-600'}`} />
+        <div className={`absolute top-10 right-0 w-60 h-60 rounded-full opacity-10 blur-3xl ${isV ? 'bg-emerald-300' : 'bg-ep-orange'}`} />
 
         <div className="relative"><EventParkLogo light size="md" /></div>
 
         <div className="relative">
-          <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
-            Plan Smarter.<br />
-            <span className="text-ep-orange">Celebrate Bigger.</span>
-          </h2>
-          <p className="text-white/50 text-sm leading-relaxed max-w-sm">
-            Africa's #1 event infrastructure platform — managing guests, vendors, payments and check-in in one place.
-          </p>
+          {isV ? (
+            <>
+              <span className="inline-block text-xs font-bold text-green-300/80 uppercase tracking-widest mb-4">For vendors &amp; suppliers</span>
+              <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
+                Welcome back to<br />
+                <span className="text-green-300">your dashboard.</span>
+              </h2>
+              <p className="text-white/50 text-sm leading-relaxed max-w-sm">
+                Sign in to manage your listings, track orders and bookings, and get paid — all in one place.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
+                Plan Smarter.<br />
+                <span className="text-ep-orange">Celebrate Bigger.</span>
+              </h2>
+              <p className="text-white/50 text-sm leading-relaxed max-w-sm">
+                Africa's #1 event infrastructure platform — managing guests, vendors, payments and check-in in one place.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="relative flex flex-wrap gap-2">
-          {['50K+ Events', '12K+ Vendors', '36 States'].map(tag => (
+          {(isV
+            ? ['12K+ Planners', 'Escrow protection', '5% per transaction']
+            : ['50K+ Events', '12K+ Vendors', '36 States']
+          ).map(tag => (
             <div key={tag} className="bg-white/10 border border-white/10 rounded-xl px-4 py-2">
               <span className="text-white text-sm font-semibold">{tag}</span>
             </div>
@@ -207,24 +222,32 @@ export default function Login({ type = 'personal' }) {
             <EventParkLogo size="md" />
           </div>
 
-          {/* Personal / Business toggle */}
+          {/* Personal / Business / Vendor toggle */}
           <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 mb-8 shadow-sm">
             <Link to="/login"
-              className={`flex-1 text-center py-2.5 rounded-lg text-sm font-semibold transition-all ${!isB ? 'bg-ep-navy text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+              className={`flex-1 text-center py-2.5 rounded-lg text-sm font-semibold transition-all ${!isB && !isV ? 'bg-ep-navy text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
               Personal
             </Link>
             <Link to="/business/login"
               className={`flex-1 text-center py-2.5 rounded-lg text-sm font-semibold transition-all ${isB ? 'bg-ep-navy text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
               Business
             </Link>
+            <Link to="/vendor/login"
+              className={`flex-1 text-center py-2.5 rounded-lg text-sm font-semibold transition-all ${isV ? 'bg-green-700 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+              Vendor
+            </Link>
           </div>
 
           {/* Step: phone */}
           {step === 'phone' && (
             <div>
-              <h1 className="text-3xl font-extrabold text-ep-navy mb-1">Welcome back</h1>
+              <h1 className="text-3xl font-extrabold text-ep-navy mb-1">
+                {isV ? 'Vendor sign in' : 'Welcome back'}
+              </h1>
               <p className="text-gray-400 text-sm mb-8">
-                Enter your phone number to receive a one-time sign-in code.
+                {isV
+                  ? 'Enter the phone number linked to your vendor account.'
+                  : 'Enter your phone number to receive a one-time sign-in code.'}
               </p>
 
               <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -245,7 +268,7 @@ export default function Login({ type = 'personal' }) {
                       <p className="text-sm font-semibold text-red-700 mb-0.5">No account found</p>
                       <p className="text-xs text-red-500">
                         This number isn't registered yet.{' '}
-                        <Link to="/signup" className="font-bold underline hover:text-red-700">
+                        <Link to={isV ? '/vendor/signup' : '/signup'} className="font-bold underline hover:text-red-700">
                           Create an account →
                         </Link>
                       </p>
@@ -270,8 +293,15 @@ export default function Login({ type = 'personal' }) {
               </button>
 
               <p className="text-center text-sm text-gray-400 mt-6">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-brand-600 font-bold hover:underline">Get Started</Link>
+                {isV ? (
+                  <>Don't have a vendor account?{' '}
+                    <Link to="/vendor/signup" className="text-green-700 font-bold hover:underline">Sign up free →</Link>
+                  </>
+                ) : (
+                  <>Don't have an account?{' '}
+                    <Link to="/signup" className="text-brand-600 font-bold hover:underline">Get Started</Link>
+                  </>
+                )}
               </p>
             </div>
           )}

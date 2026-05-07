@@ -124,6 +124,7 @@ function AppContent() {
         {/* Auth */}
         <Route path="/login" element={<Login type="personal" />} />
         <Route path="/business/login" element={<Login type="business" />} />
+        <Route path="/vendor/login" element={<Login type="vendor" />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/business/signup" element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
