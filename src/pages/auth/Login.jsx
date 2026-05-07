@@ -68,6 +68,10 @@ function normalisePhone(raw) {
   return '+' + digits;
 }
 
+const DEMO_PHONE = '+2340000000000';
+const DEMO_OTP = '000000';
+const DEMO_DISPLAY = '0000000000'; // what the input shows
+
 export default function Login({ type = 'personal' }) {
   const isB = type === 'business';
   const [step, setStep] = useState('phone');
@@ -75,6 +79,7 @@ export default function Login({ type = 'personal' }) {
   const [otp, setOtp] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -101,8 +106,9 @@ export default function Login({ type = 'personal' }) {
     if (val.length !== 6) return;
     setLoading(true);
     try {
-      await login(normalisePhone(phone), val);
-      toast.success('Welcome back!');
+      const resolvedPhone = isDemo ? DEMO_PHONE : normalisePhone(phone);
+      await login(resolvedPhone, val);
+      toast.success(isDemo ? 'Demo mode — welcome!' : 'Welcome back!');
       navigate('/dashboard');
     } catch (err) {
       toast.error(err?.message || 'Invalid code. Please try again.');
@@ -116,6 +122,26 @@ export default function Login({ type = 'personal' }) {
       toast('New code sent', { icon: '📧' });
     } catch {
       toast.error('Could not resend. Try again.');
+    }
+  };
+
+  const handleDemo = async () => {
+    setIsDemo(true);
+    setPhone(DEMO_DISPLAY);
+    setPhoneError('');
+    setLoading(true);
+    try {
+      await authApi.requestOTP(DEMO_PHONE);
+      setStep('otp');
+      // auto-fill OTP after a short delay so the boxes render first
+      setTimeout(() => {
+        setOtp(DEMO_OTP);
+      }, 150);
+    } catch (err) {
+      toast.error(err?.message || 'Demo unavailable. Try again.');
+      setIsDemo(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -196,7 +222,18 @@ export default function Login({ type = 'personal' }) {
                 </button>
               </form>
 
-              <p className="text-center text-sm text-gray-400 mt-8">
+              <div className="relative my-6 flex items-center">
+                <div className="flex-grow border-t border-gray-200" />
+                <span className="mx-3 text-xs text-gray-400 font-medium">or</span>
+                <div className="flex-grow border-t border-gray-200" />
+              </div>
+
+              <button type="button" onClick={handleDemo} disabled={loading}
+                className="w-full border-2 border-dashed border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold py-3 rounded-2xl transition-all text-sm disabled:opacity-60">
+                Try Demo
+              </button>
+
+              <p className="text-center text-sm text-gray-400 mt-6">
                 Don't have an account?{' '}
                 <Link to="/signup" className="text-brand-600 font-bold hover:underline">Get Started</Link>
               </p>
@@ -217,6 +254,12 @@ export default function Login({ type = 'personal' }) {
               <p className="text-xs text-gray-400 mb-8">
                 Didn't get it? Wait a moment then tap Resend below.
               </p>
+
+              {isDemo && (
+                <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 font-medium">
+                  Demo mode — code <span className="font-bold tracking-widest">{DEMO_OTP}</span> has been pre-filled for you.
+                </div>
+              )}
 
               <div className="space-y-5">
                 <OTPBoxes value={otp} onChange={setOtp} onComplete={handleOTPSubmit} />
