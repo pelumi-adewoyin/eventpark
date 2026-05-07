@@ -145,14 +145,14 @@ export default function Landing() {
           <div className="absolute right-8 top-1/2 -translate-y-1/2 hidden xl:block">
             <div className="w-80 bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur-sm float">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-white font-bold text-sm">Lagos Tech Summit</span>
+                <span className="text-white font-bold text-sm">Your next event</span>
                 <span className="bg-green-400/20 text-green-400 text-xs px-2 py-1 rounded-full font-semibold">Live</span>
               </div>
               <div className="space-y-3">
                 {[
-                  { label: 'RSVPs', value: '1,240 / 1,500', pct: 83 },
-                  { label: 'Budget Used', value: '₦14.2M / ₦18M', pct: 79 },
-                  { label: 'Vendors Booked', value: '8 / 10', pct: 80 },
+                  { label: 'RSVPs', value: 'Tracking live', pct: 72 },
+                  { label: 'Budget Used', value: 'On track', pct: 65 },
+                  { label: 'Vendors Booked', value: 'All confirmed', pct: 100 },
                 ].map(item => (
                   <div key={item.label}>
                     <div className="flex justify-between text-xs text-white/60 mb-1">
@@ -165,8 +165,8 @@ export default function Landing() {
                 ))}
               </div>
               <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                <span className="text-white/50 text-xs">Check-in live</span>
-                <span className="text-green-400 font-bold text-sm">247 arrived</span>
+                <span className="text-white/50 text-xs">Check-in ready</span>
+                <span className="text-green-400 font-bold text-sm">QR codes sent</span>
               </div>
             </div>
           </div>

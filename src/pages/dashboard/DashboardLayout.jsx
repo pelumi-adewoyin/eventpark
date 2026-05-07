@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Calendar, Gift, Wallet, Users, Settings,
   ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight, Ticket,
-  CheckSquare, FileText, DollarSign, Shield, BarChart2, Zap,
+  CheckSquare, FileText, DollarSign, Shield, BarChart2, Zap, Heart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { EventParkLogo } from '../../components/Logo';
@@ -15,6 +15,7 @@ const NAV = [
   { label: 'To-Do', icon: ListTodo, to: '/dashboard/todos' },
   { label: 'Budget', icon: DollarSign, to: '/dashboard/budget' },
   { label: 'Wishlist', icon: Gift, to: '/dashboard/wishlist' },
+  { label: 'Group Gifting', icon: Heart, to: '/dashboard/group-wishlist' },
   { label: 'RSVP', icon: Ticket, to: '/dashboard/rsvp' },
   { label: 'Collaborators', icon: Users, to: '/dashboard/collaborators' },
 ];

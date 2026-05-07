@@ -29,16 +29,19 @@ import DashboardHome from './pages/dashboard/DashboardHome';
 import DashboardEvents from './pages/dashboard/DashboardEvents';
 import DashboardTodos from './pages/dashboard/DashboardTodos';
 import DashboardWishlist from './pages/dashboard/DashboardWishlist';
+import DashboardGroupWishlist from './pages/dashboard/DashboardGroupWishlist';
 import DashboardCollaborators from './pages/dashboard/DashboardCollaborators';
 import DashboardSettings from './pages/dashboard/DashboardSettings';
 import DashboardRSVP from './pages/dashboard/DashboardRSVP';
 import DashboardEventWorkspace from './pages/dashboard/DashboardEventWorkspace';
 import DashboardBudget from './pages/dashboard/DashboardBudget';
 
+// Workspace-aware vendor page (personal → DashboardVendors, corporate → CorporateVendors)
+import WorkspaceVendors from './pages/dashboard/WorkspaceVendors';
+
 // Corporate pages (loaded lazily via unified /dashboard shell)
 import CorporateApprovals from './pages/dashboard/corporate/CorporateApprovals';
 import CorporateEmployees from './pages/dashboard/corporate/CorporateEmployees';
-import CorporateVendors from './pages/dashboard/corporate/CorporateVendors';
 import CorporateRFQs from './pages/dashboard/corporate/CorporateRFQs';
 import CorporateWallet from './pages/dashboard/corporate/CorporateWallet';
 import CorporateAudit from './pages/dashboard/corporate/CorporateAudit';
@@ -119,6 +122,7 @@ function AppContent() {
           {/* Personal routes */}
           <Route path="todos" element={<DashboardTodos />} />
           <Route path="wishlist" element={<DashboardWishlist />} />
+          <Route path="group-wishlist" element={<DashboardGroupWishlist />} />
           <Route path="rsvp" element={<DashboardRSVP />} />
           <Route path="collaborators" element={<DashboardCollaborators />} />
           <Route path="settings" element={<DashboardSettings />} />
@@ -129,7 +133,7 @@ function AppContent() {
           {/* Corporate-only routes */}
           <Route path="approvals" element={<CorporateApprovals />} />
           <Route path="employees" element={<CorporateEmployees />} />
-          <Route path="vendors" element={<CorporateVendors />} />
+          <Route path="vendors" element={<WorkspaceVendors />} />
           <Route path="rfqs" element={<CorporateRFQs />} />
           <Route path="wallet" element={<CorporateWallet />} />
           <Route path="audit" element={<CorporateAudit />} />

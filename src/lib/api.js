@@ -251,3 +251,53 @@ export const notifications = {
   list: () => request('GET', '/notifications'),
   markAllRead: () => request('POST', '/notifications/mark-read'),
 };
+
+// ─── Vendor Discovery (enhanced) ──────────────────────────────────────────────
+export const vendorDiscover = {
+  list: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request('GET', `/discover/vendors${q ? `?${q}` : ''}`);
+  },
+  get: (id) => request('GET', `/discover/vendors/${id}`),
+  bookmark: (id) => request('POST', `/bookmarks`, { item_type: 'vendor', item_id: id }),
+  unbookmark: (id) => request('DELETE', `/bookmarks/vendor/${id}`),
+  listBookmarks: () => request('GET', `/bookmarks?type=vendor`),
+};
+
+// ─── Bookings (enhanced) ──────────────────────────────────────────────────────
+export const bookingsApi = {
+  create: (body) => request('POST', '/bookings', body),
+  list: () => request('GET', '/bookings'),
+  get: (id) => request('GET', `/bookings/${id}`),
+  sendQuote: (id, body) => request('POST', `/bookings/${id}/quote`, body),
+  respondQuote: (id, body) => request('POST', `/bookings/${id}/quote/respond`, body),
+  pay: (id, body) => request('POST', `/bookings/${id}/pay`, body),
+  releaseEscrow: (id) => request('POST', `/bookings/${id}/release-escrow`),
+};
+
+// ─── Vendor Chat ──────────────────────────────────────────────────────────────
+export const vendorChat = {
+  listChats: () => request('GET', '/vendor-chats'),
+  getMessages: (chatId) => request('GET', `/vendor-chats/${chatId}/messages`),
+  sendMessage: (chatId, body) => request('POST', `/vendor-chats/${chatId}/messages`, body),
+};
+
+// ─── Wishlist ─────────────────────────────────────────────────────────────────
+export const wishlist = {
+  list: () => request('GET', '/wishlists'),
+  get: (id) => request('GET', `/wishlists/${id}`),
+  create: (body) => request('POST', '/wishlists', body),
+  addItem: (id, body) => request('POST', `/wishlists/${id}/items`, body),
+  deleteItem: (id, itemId) => request('DELETE', `/wishlists/${id}/items/${itemId}`),
+  contribute: (id, body) => request('POST', `/wishlists/${id}/contribute`, body),
+};
+
+// ─── Group Wishlist ───────────────────────────────────────────────────────────
+export const groupWishlist = {
+  list: () => request('GET', '/group-wishlists'),
+  create: (body) => request('POST', '/group-wishlists', body),
+  get: (id) => request('GET', `/group-wishlists/${id}`),
+  addItem: (id, body) => request('POST', `/group-wishlists/${id}/items`, body),
+  inviteContributors: (id, body) => request('POST', `/group-wishlists/${id}/invite`, body),
+  contribute: (id, body) => request('POST', `/group-wishlists/${id}/contribute`, body),
+};
