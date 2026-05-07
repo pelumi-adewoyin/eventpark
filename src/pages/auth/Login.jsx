@@ -78,6 +78,7 @@ export default function Login({ type = 'personal' }) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const { login, refreshUser } = useAuth();
@@ -90,12 +91,17 @@ export default function Login({ type = 'personal' }) {
       setPhoneError('Enter a valid Nigerian phone number'); return;
     }
     setLoading(true);
+    setNotFound(false);
     try {
       await authApi.requestOTP(normalisePhone(phone));
       toast.success('Verification code sent');
       setStep('otp');
     } catch (err) {
-      toast.error(err?.message || 'Could not send code. Try again.');
+      if (err?.status === 404) {
+        setNotFound(true);
+      } else {
+        toast.error(err?.message || 'Could not send code. Try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,12 +227,23 @@ export default function Login({ type = 'personal' }) {
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="tel" value={phone} autoFocus
-                      onChange={e => { setPhone(e.target.value); setPhoneError(''); }}
+                      onChange={e => { setPhone(e.target.value); setPhoneError(''); setNotFound(false); }}
                       placeholder="08012345678"
-                      className={`w-full pl-11 pr-4 py-3.5 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white ${phoneError ? 'border-red-300' : 'border-gray-200'}`}
+                      className={`w-full pl-11 pr-4 py-3.5 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white ${phoneError || notFound ? 'border-red-300' : 'border-gray-200'}`}
                     />
                   </div>
                   {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                  {notFound && (
+                    <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      <p className="text-sm font-semibold text-red-700 mb-0.5">No account found</p>
+                      <p className="text-xs text-red-500">
+                        This number isn't registered yet.{' '}
+                        <Link to="/signup" className="font-bold underline hover:text-red-700">
+                          Create an account →
+                        </Link>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <button type="submit" disabled={loading}
                   className="w-full bg-ep-navy hover:bg-ep-navy-light text-white font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm">

@@ -71,9 +71,17 @@ async function request(method, path, body, opts = {}) {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export const auth = {
+  // Login flow — rejects unknown phone numbers
   requestOTP: (phone) => request('POST', '/auth/request-otp', { phone }),
   verifyOTP: async (phone, code) => {
     const data = await request('POST', '/auth/verify-otp', { phone, code });
+    setTokens(data.access_token, data.refresh_token);
+    return data;
+  },
+  // Signup flow — creates account if phone doesn't exist yet
+  requestOTPSignup: (phone) => request('POST', '/auth/request-otp', { phone, create_if_missing: true }),
+  verifyOTPSignup: async (phone, code) => {
+    const data = await request('POST', '/auth/verify-otp', { phone, code, create_if_missing: true });
     setTokens(data.access_token, data.refresh_token);
     return data;
   },

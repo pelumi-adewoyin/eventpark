@@ -50,6 +50,15 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // Used by the signup flow — creates account if phone is new
+  const loginSignup = useCallback(async (phone, otpCode) => {
+    const data = await authApi.verifyOTPSignup(phone, otpCode);
+    const normalized = normalizeUser(data.user);
+    setUser(normalized);
+    setActiveWorkspaceState(deriveWorkspace(normalized));
+    return data.user;
+  }, []);
+
   // Demo login (keeps mock flow working on the landing page)
   const demoLogin = useCallback((role = 'diy') => {
     const DEMO_USERS = {
@@ -107,6 +116,7 @@ export function AuthProvider({ children }) {
       activeWorkspace,
       setActiveWorkspace,
       login,
+      loginSignup,
       demoLogin,
       logout,
       upgradeKyc,

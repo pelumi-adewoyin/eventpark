@@ -336,7 +336,7 @@ function StepPhone({ data, onNext, onBack }) {
     if (!clean.match(/^0[789][01]\d{8}$/)) { setError('Enter a valid Nigerian number (e.g. 08012345678)'); return; }
     setLoading(true);
     try {
-      await authApi.requestOTP(normalisePhone(clean));
+      await authApi.requestOTPSignup(normalisePhone(clean));
       toast.success('SMS code sent');
       onNext({ phone: clean });
     } catch (err) {
@@ -375,14 +375,14 @@ function StepPhone({ data, onNext, onBack }) {
 function StepPhoneOTP({ data, onNext, onBack }) {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { loginSignup } = useAuth();
 
   const submit = async (code) => {
     const val = code || otp;
     if (val.length !== 6) return;
     setLoading(true);
     try {
-      await login(normalisePhone(data.phone), val);
+      await loginSignup(normalisePhone(data.phone), val);
       onNext({ phoneVerified: true });
     } catch (err) {
       toast.error(err?.message || 'Invalid code. Please try again.');
@@ -392,7 +392,7 @@ function StepPhoneOTP({ data, onNext, onBack }) {
 
   const handleResend = async () => {
     try {
-      await authApi.requestOTP(normalisePhone(data.phone));
+      await authApi.requestOTPSignup(normalisePhone(data.phone));
       toast('New code sent', { icon: '📱' });
     } catch {
       toast.error('Could not resend. Try again.');
@@ -1174,11 +1174,11 @@ export default function Signup() {
   const [history, setHistory] = useState(['email']);
   const [data, setData] = useState({});
   const navigate = useNavigate();
-  const { login, refreshUser } = useAuth();
+  const { loginSignup, refreshUser } = useAuth();
 
   const handleDemo = async () => {
-    await authApi.requestOTP(DEMO_PHONE);
-    await login(DEMO_PHONE, DEMO_OTP);
+    await authApi.requestOTPSignup(DEMO_PHONE);
+    await loginSignup(DEMO_PHONE, DEMO_OTP);
     // Skip email + phone verification steps, jump straight to name
     setHistory(['email', 'name']);
     setStep('name');
