@@ -2,15 +2,18 @@ import { useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Calendar, Gift, Wallet, Users, Settings,
-  ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight, Ticket
+  ListTodo, Bell, Plus, LogOut, Menu, X, Store, ArrowUpRight, Ticket,
+  CheckSquare, FileText, DollarSign, Shield, BarChart2, Zap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { EventParkLogo } from '../../components/Logo';
 
+// Personal nav
 const NAV = [
   { label: 'Overview', icon: LayoutDashboard, to: '/dashboard', end: true },
   { label: 'My Events', icon: Calendar, to: '/dashboard/events' },
   { label: 'To-Do', icon: ListTodo, to: '/dashboard/todos' },
+  { label: 'Budget', icon: DollarSign, to: '/dashboard/budget' },
   { label: 'Wishlist', icon: Gift, to: '/dashboard/wishlist' },
   { label: 'RSVP', icon: Ticket, to: '/dashboard/rsvp' },
   { label: 'Collaborators', icon: Users, to: '/dashboard/collaborators' },
@@ -29,14 +32,40 @@ const BOTTOM_NAV = [
   { label: 'More', icon: Settings, to: '/dashboard/settings' },
 ];
 
+// Corporate nav
+const CORP_NAV = [
+  { label: 'Overview', icon: LayoutDashboard, to: '/dashboard', end: true },
+  { label: 'Events', icon: Calendar, to: '/dashboard/events' },
+  { label: 'Approvals', icon: CheckSquare, to: '/dashboard/approvals' },
+  { label: 'Employees', icon: Users, to: '/dashboard/employees' },
+  { label: 'Vendors', icon: Store, to: '/dashboard/vendors' },
+  { label: 'Get Quotes', icon: FileText, to: '/dashboard/rfqs' },
+  { label: 'Budget', icon: DollarSign, to: '/dashboard/budget' },
+  { label: 'Wallet', icon: Wallet, to: '/dashboard/wallet' },
+  { label: 'Audit Log', icon: Shield, to: '/dashboard/audit' },
+  { label: 'Reports', icon: BarChart2, to: '/dashboard/reports' },
+  { label: 'Integrations', icon: Zap, to: '/dashboard/integrations' },
+  { label: 'Settings', icon: Settings, to: '/dashboard/settings' },
+];
+
+const WORKSPACE_BADGE = {
+  corporate: { label: 'Corporate', color: 'bg-orange-100 text-orange-700' },
+  planner:   { label: 'Planner',   color: 'bg-purple-100 text-purple-700' },
+  personal:  { label: 'Personal',  color: 'bg-blue-100 text-blue-700' },
+};
+
 function SidebarContent({ onClose }) {
-  const { user, logout } = useAuth();
+  const { user, logout, activeWorkspace } = useAuth();
   const navigate = useNavigate();
+  const wsType = activeWorkspace?.type || 'personal';
+  const isCorporate = wsType === 'corporate';
 
   const cls = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
       isActive ? 'bg-brand-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'
     }`;
+
+  const navItems = isCorporate ? CORP_NAV : NAV;
 
   return (
     <div className="h-full flex flex-col bg-gray-950 overflow-hidden">
@@ -58,50 +87,60 @@ function SidebarContent({ onClose }) {
           </div>
           <div className="min-w-0">
             <div className="text-white text-sm font-semibold truncate">{user?.firstName} {user?.lastName}</div>
-            <div className="text-gray-500 text-xs">Personal · Tier {user?.kycTier || 1}</div>
+            {isCorporate ? (
+              <div className="text-gray-500 text-xs truncate">{activeWorkspace.label}</div>
+            ) : (
+              <div className="text-gray-500 text-xs">Personal · Tier {user?.kycTier || 1}</div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-grow px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(item => (
+        {navItems.map(item => (
           <NavLink key={item.to} to={item.to} end={item.end} className={cls} onClick={onClose}>
             <item.icon className="w-4 h-4 flex-shrink-0" />
             {item.label}
           </NavLink>
         ))}
 
-        <div className="pt-3 mt-2 border-t border-white/10 space-y-0.5">
-          {NAV_EXT.map(item => (
-            <Link key={item.to} to={item.to} onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all">
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
-            </Link>
-          ))}
-        </div>
+        {!isCorporate && (
+          <>
+            <div className="pt-3 mt-2 border-t border-white/10 space-y-0.5">
+              {NAV_EXT.map(item => (
+                <Link key={item.to} to={item.to} onClick={onClose}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
 
-        <div className="pt-3 mt-2 border-t border-white/10">
-          <NavLink to="/dashboard/settings" className={cls} onClick={onClose}>
-            <Settings className="w-4 h-4 flex-shrink-0" />
-            Settings
-          </NavLink>
-        </div>
+            <div className="pt-3 mt-2 border-t border-white/10">
+              <NavLink to="/dashboard/settings" className={cls} onClick={onClose}>
+                <Settings className="w-4 h-4 flex-shrink-0" />
+                Settings
+              </NavLink>
+            </div>
+          </>
+        )}
       </nav>
 
-      {/* Wallet card */}
-      <div className="mx-3 mb-3 p-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex-shrink-0">
-        <div className="text-brand-200 text-xs font-medium mb-1">Wallet Balance</div>
-        <div className="text-white text-xl font-extrabold">₦{(user?.walletBalance || 0).toLocaleString()}</div>
-        {(user?.walletEscrow || 0) > 0 && (
-          <div className="text-brand-300 text-xs mt-0.5">₦{(user.walletEscrow).toLocaleString()} in escrow</div>
-        )}
-        <Link to="/wallet" onClick={onClose}
-          className="mt-3 flex items-center gap-1 text-white text-xs font-semibold hover:underline">
-          Manage wallet <ArrowUpRight className="w-3 h-3" />
-        </Link>
-      </div>
+      {/* Wallet card (personal only) */}
+      {!isCorporate && (
+        <div className="mx-3 mb-3 p-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex-shrink-0">
+          <div className="text-brand-200 text-xs font-medium mb-1">Wallet Balance</div>
+          <div className="text-white text-xl font-extrabold">₦{(user?.walletBalance || 0).toLocaleString()}</div>
+          {(user?.walletEscrow || 0) > 0 && (
+            <div className="text-brand-300 text-xs mt-0.5">₦{(user.walletEscrow).toLocaleString()} in escrow</div>
+          )}
+          <Link to="/wallet" onClick={onClose}
+            className="mt-3 flex items-center gap-1 text-white text-xs font-semibold hover:underline">
+            Manage wallet <ArrowUpRight className="w-3 h-3" />
+          </Link>
+        </div>
+      )}
 
       {/* Sign out */}
       <button
@@ -117,7 +156,9 @@ function SidebarContent({ onClose }) {
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, activeWorkspace } = useAuth();
+  const wsType = activeWorkspace?.type || 'personal';
+  const badge = WORKSPACE_BADGE[wsType] || WORKSPACE_BADGE.personal;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -146,8 +187,17 @@ export default function DashboardLayout() {
               <Menu className="w-4 h-4 text-gray-600" />
             </button>
 
-            <div className="lg:hidden flex-shrink-0">
+            <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
               <EventParkLogo size="sm" />
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.color}`}>
+                {badge.label}
+              </span>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.color}`}>
+                {badge.label}
+              </span>
             </div>
 
             <div className="hidden lg:block flex-1 min-w-0">

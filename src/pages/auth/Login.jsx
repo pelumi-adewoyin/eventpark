@@ -80,7 +80,6 @@ export default function Login({ type = 'personal' }) {
     await new Promise(r => setTimeout(r, 700));
     setLoading(false);
     toast.success('Verification code sent');
-    toast('Demo mode — enter any 6 digits to sign in', { icon: '🔑', duration: 12000 });
     setStep('otp');
   };
 
@@ -93,8 +92,7 @@ export default function Login({ type = 'personal' }) {
     const role = email.includes('planner') ? 'planner' : email.includes('corp') ? 'corporate' : 'diy';
     demoLogin(role);
     toast.success('Welcome back!');
-    const routes = { diy: '/dashboard', planner: '/planner', corporate: '/corporate' };
-    navigate(routes[role] || '/dashboard');
+    navigate('/dashboard');
   };
 
   return (
@@ -186,8 +184,8 @@ export default function Login({ type = 'personal' }) {
               <p className="text-gray-400 text-sm mb-2">
                 We sent a 6-digit code to <span className="font-semibold text-ep-navy">{email}</span>
               </p>
-              <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">
-                🔑 Demo mode — enter any 6 digits to sign in
+              <p className="text-xs text-gray-400 mb-8">
+                Didn't receive a code? Check your spam folder or resend below.
               </p>
 
               <div className="space-y-5">

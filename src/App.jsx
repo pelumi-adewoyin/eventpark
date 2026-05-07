@@ -21,8 +21,10 @@ import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import { Navigate } from 'react-router-dom';
 
-// Dashboards
+// Dashboards — shared shell
 import DashboardLayout from './pages/dashboard/DashboardLayout';
+import WorkspaceHome from './pages/dashboard/WorkspaceHome';
+import WorkspaceEvents from './pages/dashboard/WorkspaceEvents';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import DashboardEvents from './pages/dashboard/DashboardEvents';
 import DashboardTodos from './pages/dashboard/DashboardTodos';
@@ -31,8 +33,17 @@ import DashboardCollaborators from './pages/dashboard/DashboardCollaborators';
 import DashboardSettings from './pages/dashboard/DashboardSettings';
 import DashboardRSVP from './pages/dashboard/DashboardRSVP';
 import DashboardEventWorkspace from './pages/dashboard/DashboardEventWorkspace';
-import PlannerDashboard from './pages/dashboard/PlannerDashboard';
-import CorporateDashboard from './pages/dashboard/CorporateDashboard';
+import DashboardBudget from './pages/dashboard/DashboardBudget';
+
+// Corporate pages (loaded lazily via unified /dashboard shell)
+import CorporateApprovals from './pages/dashboard/corporate/CorporateApprovals';
+import CorporateEmployees from './pages/dashboard/corporate/CorporateEmployees';
+import CorporateVendors from './pages/dashboard/corporate/CorporateVendors';
+import CorporateRFQs from './pages/dashboard/corporate/CorporateRFQs';
+import CorporateWallet from './pages/dashboard/corporate/CorporateWallet';
+import CorporateAudit from './pages/dashboard/corporate/CorporateAudit';
+import CorporateReports from './pages/dashboard/corporate/CorporateReports';
+import CorporateIntegrations from './pages/dashboard/corporate/CorporateIntegrations';
 
 // Features
 import CreateEvent from './pages/events/CreateEvent';
@@ -96,20 +107,38 @@ function AppContent() {
         <Route path="/business/signup" element={<Navigate to="/signup" replace />} />
         <Route path="/onboarding" element={<Navigate to="/signup" replace />} />
 
-        {/* DIY Dashboard — nested routes */}
+        {/* Unified dashboard shell — role-aware rendering */}
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="events" element={<DashboardEvents />} />
+          {/* Home — switches between CorporateHome / DashboardHome based on workspace */}
+          <Route index element={<WorkspaceHome />} />
+
+          {/* Events — switches between CorporateEvents / DashboardEvents */}
+          <Route path="events" element={<WorkspaceEvents />} />
           <Route path="events/:id" element={<DashboardEventWorkspace />} />
+
+          {/* Personal routes */}
           <Route path="todos" element={<DashboardTodos />} />
           <Route path="wishlist" element={<DashboardWishlist />} />
           <Route path="rsvp" element={<DashboardRSVP />} />
           <Route path="collaborators" element={<DashboardCollaborators />} />
           <Route path="settings" element={<DashboardSettings />} />
+
+          {/* Budget — works for both personal and corporate */}
+          <Route path="budget" element={<DashboardBudget />} />
+
+          {/* Corporate-only routes */}
+          <Route path="approvals" element={<CorporateApprovals />} />
+          <Route path="employees" element={<CorporateEmployees />} />
+          <Route path="vendors" element={<CorporateVendors />} />
+          <Route path="rfqs" element={<CorporateRFQs />} />
+          <Route path="wallet" element={<CorporateWallet />} />
+          <Route path="audit" element={<CorporateAudit />} />
+          <Route path="reports" element={<CorporateReports />} />
+          <Route path="integrations" element={<CorporateIntegrations />} />
         </Route>
 
-        <Route path="/planner" element={<PlannerDashboard />} />
-        <Route path="/corporate" element={<CorporateDashboard />} />
+        <Route path="/planner" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/corporate" element={<Navigate to="/dashboard" replace />} />
 
         {/* Events */}
         <Route path="/events/create" element={<Layout hideFooter><CreateEvent /></Layout>} />

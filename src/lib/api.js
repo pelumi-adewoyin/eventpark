@@ -155,3 +155,99 @@ export const discover = {
     return request('GET', `/discover/products${q ? `?${q}` : ''}`);
   },
 };
+
+// ─── Personal Budget ──────────────────────────────────────────────────────────
+export const personalBudget = {
+  list: () => request('GET', '/budgets'),
+  get: (id) => request('GET', `/budgets/${id}`),
+  create: (body) => request('POST', '/budgets', body),
+  update: (id, body) => request('PATCH', `/budgets/${id}`, body),
+  delete: (id) => request('DELETE', `/budgets/${id}`),
+  addExpense: (id, body) => request('POST', `/budgets/${id}/expenses`, body),
+  listExpenses: (id) => request('GET', `/budgets/${id}/expenses`),
+  deleteExpense: (id, expenseId) => request('DELETE', `/budgets/${id}/expenses/${expenseId}`),
+};
+
+// ─── Organisations ────────────────────────────────────────────────────────────────────────────────
+export const orgs = {
+  create: (body) => request('POST', '/orgs', body),
+  getMe: () => request('GET', '/orgs/me'),
+  update: (orgId, body) => request('PATCH', `/orgs/${orgId}`, body),
+  listDepts: (orgId) => request('GET', `/orgs/${orgId}/departments`),
+  createDept: (orgId, body) => request('POST', `/orgs/${orgId}/departments`),
+  listMembers: (orgId) => request('GET', `/orgs/${orgId}/members`),
+  inviteMember: (orgId, body) => request('POST', `/orgs/${orgId}/members`, body),
+  updateMember: (orgId, userId, body) => request('PATCH', `/orgs/${orgId}/members/${userId}`, body),
+};
+
+// ─── Approvals ────────────────────────────────────────────────────────────────────────────────
+export const approvals = {
+  list: (orgId, params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request('GET', `/orgs/${orgId}/approvals${q ? `?${q}` : ''}`);
+  },
+  submit: (orgId, body) => request('POST', `/orgs/${orgId}/approvals`, body),
+  get: (orgId, id) => request('GET', `/orgs/${orgId}/approvals/${id}`),
+  approve: (orgId, id, body) => request('POST', `/orgs/${orgId}/approvals/${id}/approve`, body),
+  reject: (orgId, id, body) => request('POST', `/orgs/${orgId}/approvals/${id}/reject`, body),
+  requestChanges: (orgId, id, body) => request('POST', `/orgs/${orgId}/approvals/${id}/request-changes`, body),
+};
+
+// ─── RFQs / Quotes ──────────────────────────────────────────────────────────────────────────────
+export const rfqs = {
+  list: (orgId) => request('GET', `/orgs/${orgId}/rfqs`),
+  create: (orgId, body) => request('POST', `/orgs/${orgId}/rfqs`, body),
+  get: (orgId, id) => request('GET', `/orgs/${orgId}/rfqs/${id}`),
+  send: (orgId, id) => request('POST', `/orgs/${orgId}/rfqs/${id}/send`),
+  award: (orgId, id, body) => request('POST', `/orgs/${orgId}/rfqs/${id}/award`, body),
+  cancel: (orgId, id) => request('POST', `/orgs/${orgId}/rfqs/${id}/cancel`),
+};
+
+// ─── Purchase Orders ────────────────────────────────────────────────────────────────────────────
+export const pos = {
+  list: (orgId) => request('GET', `/orgs/${orgId}/pos`),
+  create: (orgId, body) => request('POST', `/orgs/${orgId}/pos`, body),
+  get: (orgId, id) => request('GET', `/orgs/${orgId}/pos/${id}`),
+  goodsReceipt: (orgId, id, body) => request('POST', `/orgs/${orgId}/pos/${id}/goods-receipt`, body),
+};
+
+// ─── Invoices ─────────────────────────────────────────────────────────────────────────────────
+export const invoices = {
+  list: (orgId) => request('GET', `/orgs/${orgId}/invoices`),
+  create: (orgId, body) => request('POST', `/orgs/${orgId}/invoices`, body),
+  matchStatus: (orgId, id) => request('GET', `/orgs/${orgId}/invoices/${id}/match`),
+  pay: (orgId, id, body) => request('POST', `/orgs/${orgId}/invoices/${id}/pay`, body),
+};
+
+// ─── Corporate Wallet ─────────────────────────────────────────────────────────────────────────────
+export const corpWallet = {
+  get: (orgId) => request('GET', `/orgs/${orgId}/wallet`),
+  transactions: (orgId) => request('GET', `/orgs/${orgId}/wallet/transactions`),
+  topup: (orgId, body) => request('POST', `/orgs/${orgId}/wallet/topup`, body),
+  requestWithdrawal: (orgId, body) => request('POST', `/orgs/${orgId}/wallet/withdrawal-requests`, body),
+};
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────────────────────
+export const auditLog = {
+  list: (orgId, params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request('GET', `/orgs/${orgId}/audit${q ? `?${q}` : ''}`);
+  },
+  verify: (orgId) => request('GET', `/orgs/${orgId}/audit/verify`),
+  export: (orgId) => request('GET', `/orgs/${orgId}/audit/export`),
+};
+
+// ─── Budget ─────────────────────────────────────────────────────────────────────────────────
+export const budget = {
+  list: (eventId) => request('GET', `/events/${eventId}/budget`),
+  summary: (eventId) => request('GET', `/events/${eventId}/budget/summary`),
+  create: (eventId, body) => request('POST', `/events/${eventId}/budget`, body),
+  update: (eventId, lineId, body) => request('PATCH', `/events/${eventId}/budget/${lineId}`, body),
+  delete: (eventId, lineId) => request('DELETE', `/events/${eventId}/budget/${lineId}`),
+};
+
+// ─── Notifications ────────────────────────────────────────────────────────────────────────────
+export const notifications = {
+  list: () => request('GET', '/notifications'),
+  markAllRead: () => request('POST', '/notifications/mark-read'),
+};
