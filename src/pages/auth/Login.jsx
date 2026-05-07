@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { auth as authApi } from '../../lib/api';
+import { auth as authApi, users as usersApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
 
@@ -80,7 +80,7 @@ export default function Login({ type = 'personal' }) {
   const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const handlePhoneSubmit = async (e) => {
@@ -107,7 +107,16 @@ export default function Login({ type = 'personal' }) {
     setLoading(true);
     try {
       const resolvedPhone = isDemo ? DEMO_PHONE : normalisePhone(phone);
-      await login(resolvedPhone, val);
+      const rawUser = await login(resolvedPhone, val);
+
+      // Business login: ensure the user has a corporate role.
+      // New users arrive with role=null; set it now so the corporate
+      // dashboard is shown immediately without a separate onboarding step.
+      if (isB && !rawUser?.role) {
+        await usersApi.completeOnboarding({ role: 'corporate' });
+        await refreshUser(); // re-fetches /users/me and updates AuthContext
+      }
+
       toast.success(isDemo ? 'Demo mode — welcome!' : 'Welcome back!');
       navigate('/dashboard');
     } catch (err) {
