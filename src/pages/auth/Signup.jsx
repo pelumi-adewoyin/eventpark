@@ -311,7 +311,7 @@ function StepEmailOTP({ data, onNext, onBack }) {
       <Back onClick={onBack} />
       <h1 className="text-2xl font-extrabold text-ep-navy mb-1">Check your email</h1>
       <p className="text-sm text-gray-400 mb-2">We sent a 6-digit code to <span className="font-semibold text-ep-navy">{data.email}</span></p>
-      <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">🔑 Demo mode — enter any 6 digits to continue</p>
+      <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">🔑 Use <span className="font-bold tracking-widest">000000</span> to authenticate</p>
       <div className="space-y-5">
         <OTPBoxes value={otp} onChange={setOtp} onComplete={submit} />
         <Btn onClick={() => submit()} loading={loading} disabled={otp.length !== 6}>
@@ -424,7 +424,8 @@ function StepPhoneOTP({ data, onNext, onBack }) {
       <ProgressBar group={2} />
       <Back onClick={onBack} />
       <h1 className="text-2xl font-extrabold text-ep-navy mb-1">Verify your phone</h1>
-      <p className="text-sm text-gray-400 mb-8">We sent a 6-digit code to <span className="font-semibold text-ep-navy">{data.phone}</span></p>
+      <p className="text-sm text-gray-400 mb-2">We sent a 6-digit code to <span className="font-semibold text-ep-navy">{data.phone}</span></p>
+      <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">🔑 Use <span className="font-bold tracking-widest">000000</span> to authenticate</p>
       <div className="space-y-5">
         <OTPBoxes value={otp} onChange={setOtp} onComplete={submit} />
         <Btn onClick={() => submit()} loading={loading} disabled={otp.length !== 6}>

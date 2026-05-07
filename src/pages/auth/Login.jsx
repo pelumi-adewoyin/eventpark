@@ -287,12 +287,12 @@ export default function Login({ type = 'personal' }) {
               <p className="text-gray-400 text-sm mb-2">
                 We sent a 6-digit code to <span className="font-semibold text-ep-navy">{phone}</span>
               </p>
-              <p className="text-xs text-gray-400 mb-8">
-                Didn't get it? Wait a moment then tap Resend below.
+              <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">
+                🔑 Use <span className="font-bold tracking-widest">000000</span> to authenticate
               </p>
 
               {isDemo && (
-                <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 font-medium">
+                <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-700 font-medium mb-4">
                   Demo mode — code <span className="font-bold tracking-widest">{DEMO_OTP}</span> has been pre-filled for you.
                 </div>
               )}
