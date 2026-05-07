@@ -569,7 +569,7 @@ function ModalBackdrop({ children, onClose }) {
   );
 }
 
-// ─── Tab: Event Park Vendors ──────────────────────────────────────────────────
+// ─── Tab: Eventpark Vendors ──────────────────────────────────────────────────
 
 function TabAllVendors({ onSwitchTab }) {
   const [vendors_list, setVendorsList] = useState([]);
@@ -777,7 +777,7 @@ function TabMyVendors({ onSwitchTab }) {
         <div className="text-center py-20">
           <Bookmark className="w-10 h-10 mx-auto mb-3 text-gray-200" />
           <p className="font-semibold text-gray-400 mb-1">No saved vendors yet.</p>
-          <p className="text-sm text-gray-400 mb-4">Browse Event Park Vendors to find and save vendors you like.</p>
+          <p className="text-sm text-gray-400 mb-4">Browse Eventpark Vendors to find and save vendors you like.</p>
           <button
             onClick={() => onSwitchTab('all')}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 hover:underline"
@@ -923,7 +923,7 @@ export default function DashboardVendors() {
   const [activeTab, setActiveTab] = useState('all');
 
   const TABS = [
-    { key: 'all',      label: 'Event Park Vendors', icon: Store },
+    { key: 'all',      label: 'Eventpark Vendors', icon: Store },
     { key: 'my',       label: 'My Vendors',         icon: Bookmark },
     { key: 'bookings', label: 'Bookings',            icon: Calendar },
   ];

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileSearch, Plus, X, Loader2, AlertCircle, RefreshCw, Eye, Calendar,
+  Building2, CheckSquare, Square, Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
-import { rfqs, events } from '../../../lib/api';
+import { rfqs, events, orgs } from '../../../lib/api';
 
 const fmt = (n) => '₦' + Number(n || 0).toLocaleString('en-NG');
 
@@ -25,18 +26,25 @@ const STATUS_PILL = {
   cancelled:  'bg-red-100 text-red-700',
 };
 
-function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
+function NewRFQModal({ orgId, eventsList, vendorList, onClose, onDone }) {
   const [form, setForm] = useState({
     title: '', event_id: '', description: '', deadline: '', budget_hint: '',
   });
+  const [selectedVendors, setSelectedVendors] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const toggleVendor = (id) => {
+    setSelectedVendors(prev =>
+      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) { toast.error('Title is required.'); return; }
-    if (!form.description.trim()) { toast.error('Description is required.'); return; }
+    if (!form.description.trim()) { toast.error('Please describe what you need.'); return; }
     if (!form.deadline) { toast.error('Deadline is required.'); return; }
     try {
       setSubmitting(true);
@@ -45,9 +53,9 @@ function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
         event_id: form.event_id || undefined,
         description: form.description.trim(),
         deadline: form.deadline,
-        budget_hint: form.budget_hint ? Number(form.budget_hint) : undefined,
+        vendor_ids: selectedVendors.length > 0 ? selectedVendors : undefined,
       });
-      toast.success('Quote request created!');
+      toast.success('Quote request created and sent to vendors!');
       onDone();
     } catch (err) {
       toast.error(err.message || 'Failed to create quote request.');
@@ -60,8 +68,11 @@ function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-gray-900 text-lg">New quote request</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg">New quote request</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Describe what you need, select vendors, and send — they'll respond with their quotes.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-4">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -79,35 +90,20 @@ function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Link to event <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <select
-              value={form.event_id}
-              onChange={e => set('event_id', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
-              <option value="">No event linked</option>
-              {eventsList.map(ev => (
-                <option key={ev.id} value={ev.id}>{ev.title || ev.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
               What do you need? <span className="text-red-500">*</span>
             </label>
             <textarea
               value={form.description}
               onChange={e => set('description', e.target.value)}
               rows={4}
-              placeholder="Describe your requirements in detail — dates, quantities, specifications…"
+              placeholder="Describe your requirements — dates, quantities, specifications, delivery location…"
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Deadline <span className="text-red-500">*</span>
+                Response deadline <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -118,18 +114,55 @@ function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Approximate budget <span className="text-gray-400 font-normal">(₦)</span>
+                Link to event <span className="text-gray-400 font-normal">(opt)</span>
               </label>
-              <input
-                type="number"
-                value={form.budget_hint}
-                onChange={e => set('budget_hint', e.target.value)}
-                placeholder="500000"
-                min="0"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+              <select
+                value={form.event_id}
+                onChange={e => set('event_id', e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+              >
+                <option value="">No event</option>
+                {eventsList.map(ev => (
+                  <option key={ev.id} value={ev.id}>{ev.title || ev.name}</option>
+                ))}
+              </select>
             </div>
           </div>
+
+          {/* Vendor selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Send to vendors <span className="text-gray-400 font-normal">(select from your directory)</span>
+            </label>
+            {vendorList.length === 0 ? (
+              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                <Info className="w-4 h-4 flex-shrink-0" />
+                No vendors in your directory yet. Go to the Vendors tab to add some first.
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 max-h-36 overflow-y-auto">
+                {vendorList.map(v => {
+                  const selected = selectedVendors.includes(v.id);
+                  return (
+                    <button key={v.id} type="button" onClick={() => toggleVendor(v.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${selected ? 'bg-orange-50' : 'hover:bg-gray-50'}`}>
+                      {selected
+                        ? <CheckSquare className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                        : <Square className="w-4 h-4 text-gray-300 flex-shrink-0" />}
+                      <span className="text-sm font-medium text-gray-800">{v.name}</span>
+                      <span className="text-xs text-gray-400 ml-auto">{v.category}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {selectedVendors.length > 0 && (
+              <p className="text-xs text-orange-600 font-medium mt-1.5">
+                {selectedVendors.length} vendor{selectedVendors.length !== 1 ? 's' : ''} selected
+              </p>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
@@ -138,7 +171,7 @@ function NewRFQModal({ orgId, eventsList, onClose, onDone }) {
             <button type="submit" disabled={submitting}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors">
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Create quote request
+              Send quote request
             </button>
           </div>
         </form>
@@ -153,6 +186,7 @@ export default function CorporateRFQs() {
 
   const [rfqList, setRfqList] = useState([]);
   const [eventsList, setEventsList] = useState([]);
+  const [vendorList, setVendorList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
@@ -163,9 +197,10 @@ export default function CorporateRFQs() {
     try {
       setLoading(true);
       setError(null);
-      const [rfqRes, evRes] = await Promise.allSettled([
+      const [rfqRes, evRes, vendorRes] = await Promise.allSettled([
         rfqs.list(orgId),
         events.list(),
+        orgs.listVendors(orgId),
       ]);
       if (rfqRes.status === 'fulfilled') {
         const d = rfqRes.value;
@@ -176,6 +211,10 @@ export default function CorporateRFQs() {
       if (evRes.status === 'fulfilled') {
         const d = evRes.value;
         setEventsList(Array.isArray(d) ? d : d?.events || []);
+      }
+      if (vendorRes.status === 'fulfilled') {
+        const d = vendorRes.value;
+        setVendorList(Array.isArray(d) ? d : d?.vendors || []);
       }
     } catch (err) {
       setError(err.message || 'Failed to load quote requests.');
@@ -196,11 +235,11 @@ export default function CorporateRFQs() {
   return (
     <div className="p-4 sm:p-6 max-w-6xl">
       {/* Header */}
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-xl font-extrabold text-gray-900">Quote Requests</h2>
           <p className="text-sm text-gray-400 mt-0.5">
-            Send your requirements to multiple vendors and compare their quotes.
+            Send requirements to vendors and compare their quotes side by side.
           </p>
         </div>
         <button
@@ -209,6 +248,17 @@ export default function CorporateRFQs() {
           <Plus className="w-4 h-4" />
           New quote request
         </button>
+      </div>
+
+      {/* How it works */}
+      <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 mb-6">
+        <p className="text-xs font-bold text-orange-700 uppercase tracking-wide mb-2">How it works</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-orange-800">
+          <span>① Add vendors to your directory</span>
+          <span>→ ② Create a quote request &amp; select vendors</span>
+          <span>→ ③ Vendors respond with their prices</span>
+          <span>→ ④ You compare &amp; award the best quote</span>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -343,6 +393,7 @@ export default function CorporateRFQs() {
         <NewRFQModal
           orgId={orgId}
           eventsList={eventsList}
+          vendorList={vendorList}
           onClose={() => setShowNewModal(false)}
           onDone={() => { setShowNewModal(false); fetchData(); }}
         />

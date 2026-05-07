@@ -215,7 +215,7 @@ export default function DiscoverProducts() {
             {!loading && products.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <ShoppingBag className="w-14 h-14 text-gray-200 mb-4" />
-                <h3 className="text-lg font-bold text-gray-700 mb-2">Products from Event Park vendors</h3>
+                <h3 className="text-lg font-bold text-gray-700 mb-2">Products from Eventpark vendors</h3>
                 <p className="text-sm text-gray-400 max-w-sm mb-6">
                   Browse cakes, flowers, gifts, branded merchandise and more — coming to EventPark.
                 </p>

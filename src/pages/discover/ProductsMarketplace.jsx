@@ -98,7 +98,7 @@ function ProductCard({ product, index, onAddToCart, savedIds, onToggleSave }) {
       <div className="p-4 flex flex-col flex-1 gap-2">
         <div className="min-w-0">
           <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">{product.name}</h3>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">{product.vendor_name || 'Event Park Vendor'}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">{product.vendor_name || 'Eventpark Vendor'}</p>
         </div>
 
         {product.rating > 0 && (
@@ -245,7 +245,7 @@ function EmptyState() {
         <Package className="w-8 h-8 text-orange-400" />
       </div>
       <div className="text-center max-w-md">
-        <h2 className="text-lg font-bold text-gray-900 mb-2">Explore products from Event Park vendors</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Explore products from Eventpark vendors</h2>
         <p className="text-sm text-gray-400">Browse and order cakes, gifts, branded swag, decor, and more — directly from verified vendors.</p>
       </div>
 
@@ -405,7 +405,7 @@ export default function ProductsMarketplace() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-extrabold text-gray-900">Products</h1>
-              <p className="text-xs text-gray-400 mt-0.5">From Event Park vendors</p>
+              <p className="text-xs text-gray-400 mt-0.5">From Eventpark vendors</p>
             </div>
 
             <div className="flex items-center gap-3">

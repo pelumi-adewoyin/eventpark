@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { auth as authApi, users as usersApi } from '../lib/api';
 
 const AuthContext = createContext(null);
@@ -25,12 +25,16 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [kycModalOpen, setKycModalOpen] = useState(false);
   const [kycTrigger, setKycTrigger] = useState(null);
+  // Prevents the mount-time /users/me fetch from overwriting a fresh login
+  // (race condition: user logs in fast while mount fetch is still in-flight)
+  const loginCalledRef = useRef(false);
 
   // On mount: restore session from stored token
   useEffect(() => {
     if (authApi.isLoggedIn()) {
       usersApi.me()
         .then(u => {
+          if (loginCalledRef.current) return; // login() already set fresh user — skip
           const normalized = normalizeUser(u);
           setUser(normalized);
           setActiveWorkspaceState(deriveWorkspace(normalized));
@@ -43,6 +47,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (phone, otpCode) => {
+    loginCalledRef.current = true; // block any in-flight mount fetch from overwriting
     const data = await authApi.verifyOTP(phone, otpCode);
     const normalized = normalizeUser(data.user);
     setUser(normalized);
@@ -52,6 +57,7 @@ export function AuthProvider({ children }) {
 
   // Used by the signup flow — creates account if phone is new
   const loginSignup = useCallback(async (phone, otpCode) => {
+    loginCalledRef.current = true;
     const data = await authApi.verifyOTPSignup(phone, otpCode);
     const normalized = normalizeUser(data.user);
     setUser(normalized);

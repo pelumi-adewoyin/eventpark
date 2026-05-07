@@ -192,6 +192,10 @@ export const orgs = {
   listMembers: (orgId) => request('GET', `/orgs/${orgId}/members`),
   inviteMember: (orgId, body) => request('POST', `/orgs/${orgId}/members`, body),
   updateMember: (orgId, userId, body) => request('PATCH', `/orgs/${orgId}/members/${userId}`, body),
+  // Vendor directory
+  listVendors: (orgId) => request('GET', `/orgs/${orgId}/vendors`),
+  addVendor: (orgId, body) => request('POST', `/orgs/${orgId}/vendors`, body),
+  updateVendorStatus: (orgId, vendorId, body) => request('PATCH', `/orgs/${orgId}/vendors/${vendorId}`, body),
 };
 
 // ─── Approvals ────────────────────────────────────────────────────────────────────────────────

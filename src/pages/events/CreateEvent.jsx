@@ -4,9 +4,10 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, Calendar, MapPin, Users,
   DollarSign, Globe, Lock, Tag, Image, Zap, AlertTriangle,
   Plus, Trash2, Edit2, Copy, Share2, ExternalLink, X, ToggleLeft, ToggleRight,
-  Ticket, Eye, EyeOff
+  Ticket, Eye, EyeOff, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { events as eventsApi } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 const PRIVATE_STEPS = ['Type', 'Details', 'Budget', 'Guests', 'Review'];
@@ -395,17 +396,41 @@ function StepPublish({ form, goToBasics, goToTickets }) {
   const [published, setPublished] = useState(null);
 
   const tickets = form.tickets || [];
-  const slug = slugify(form.event_name || 'my-event') + '-' + randomSuffix();
-  const url = `eventpark.ng/discover/${slug}`;
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     setPublishing(true);
-    setTimeout(() => {
-      const eventData = { ...form, slug, publishedAt: new Date().toISOString(), url };
-      try { localStorage.setItem(`ep_event_${slug}`, JSON.stringify(eventData)); } catch (_) {}
-      setPublished({ slug, url });
+    try {
+      let startAt;
+      if (form.event_date) {
+        startAt = form.event_start_time
+          ? `${form.event_date}T${form.event_start_time}:00`
+          : `${form.event_date}T00:00:00`;
+      }
+      const result = await eventsApi.create({
+        title: form.event_name || 'My Event',
+        event_type: form.public_event_type || 'other',
+        description: form.event_description || undefined,
+        venue_name: form.venue_name || undefined,
+        venue_address: form.venue_address || undefined,
+        venue_city: form.venue_city || undefined,
+        start_at: startAt,
+        max_guests: form.event_capacity ? parseInt(form.event_capacity) : undefined,
+        budget_total: 0,
+        visibility: 'public',
+      });
+      // Attempt to publish immediately (requires KYC tier 1+)
+      if (result?.id) {
+        try { await eventsApi.publish(result.id); } catch {}
+      }
+      const slug = slugify(form.event_name || 'my-event') + '-' + randomSuffix();
+      const url = `eventpark.ng/e/${slug}`;
+      setPublished({ slug, url, id: result?.id });
+      toast.success('Event published!');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to publish event. Please try again.');
+    } finally {
       setPublishing(false);
-    }, 1500);
+    }
   };
 
   const copyLink = () => {
@@ -420,7 +445,7 @@ function StepPublish({ form, goToBasics, goToTickets }) {
         <p className="text-sm text-gray-400 mb-2">Share it everywhere and start selling tickets.</p>
         <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-6">
           <Globe className="w-4 h-4 text-brand-600" />
-          <span className="text-sm font-mono text-gray-700">{published.url}</span>
+          <span className="text-sm font-mono text-gray-700">{published?.url}</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
           <button onClick={copyLink} className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
@@ -516,6 +541,7 @@ export default function CreateEvent() {
   const { user, triggerKyc } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     type: null, typeGroup: null,
     // Private fields
@@ -545,7 +571,33 @@ export default function CreateEvent() {
 
   const prev = () => setCurrentStep(s => Math.max(0, s - 1));
 
-  const handleSubmit = () => navigate('/dashboard');
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      let startAt;
+      if (form.date) {
+        startAt = form.time
+          ? `${form.date}T${form.time}:00`
+          : `${form.date}T00:00:00`;
+      }
+      await eventsApi.create({
+        title: form.name || 'My Event',
+        event_type: form.type || 'social',
+        venue_name: form.venue || undefined,
+        venue_city: form.city || undefined,
+        start_at: startAt,
+        max_guests: form.capacity ? parseInt(form.capacity) : undefined,
+        budget_total: form.budget ? parseInt(form.budget) : 0,
+        visibility: 'private',
+      });
+      toast.success('Event created!');
+      navigate(user?.role === 'corporate' ? '/dashboard' : '/dashboard');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to create event. Please try again.');
+      setSubmitting(false);
+    }
+  };
 
   const canContinue = () => {
     if (currentStep === 0) return !!form.type;
@@ -786,9 +838,13 @@ export default function CreateEvent() {
             ) : (
               <button
                 onClick={handleSubmit}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-700 text-white transition"
+                disabled={submitting}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white transition"
               >
-                <CheckCircle2 className="w-4 h-4" />Create Event
+                {submitting
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <CheckCircle2 className="w-4 h-4" />}
+                {submitting ? 'Creating…' : 'Create Event'}
               </button>
             )}
           </div>

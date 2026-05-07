@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  CheckCircle, XCircle, Eye, AlertCircle, RefreshCw, X, Loader2,
+  CheckCircle, XCircle, Eye, AlertCircle, RefreshCw, X, Loader2, Plus, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext';
@@ -40,6 +40,127 @@ const STATUS_PILL = {
   changes_requested: 'bg-blue-100 text-blue-700',
 };
 
+// ─── Request Approval Modal ──────────────────────────────────────────────────
+function RequestApprovalModal({ orgId, onClose, onDone }) {
+  const [form, setForm] = useState({
+    type: 'Expense', vendor_name: '', amount: '', event_name: '', urgency: 'normal', notes: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.notes.trim()) { toast.error('Please describe what you need approved.'); return; }
+    try {
+      setSubmitting(true);
+      await approvalsApi.submit(orgId, {
+        type: form.type,
+        vendor_name: form.vendor_name.trim() || undefined,
+        amount: form.amount ? parseInt(form.amount) : undefined,
+        event_name: form.event_name.trim() || undefined,
+        urgency: form.urgency,
+        notes: form.notes.trim(),
+      });
+      toast.success('Approval request submitted — your approver will be notified.');
+      onDone();
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit approval request.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg">Request approval</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Submit for review by your designated approver.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Type</label>
+            <div className="flex gap-2 flex-wrap">
+              {['PO', 'Invoice', 'Expense', 'RFQ Award'].map(t => (
+                <button key={t} type="button" onClick={() => set('type', t)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    form.type === t
+                      ? 'bg-orange-600 text-white border-orange-600'
+                      : 'border-gray-200 text-gray-600 hover:border-orange-300'
+                  }`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Vendor / Supplier</label>
+              <input value={form.vendor_name} onChange={e => set('vendor_name', e.target.value)}
+                placeholder="e.g. Royal Caterers"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Amount (₦)</label>
+              <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)}
+                placeholder="0"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Linked event</label>
+            <input value={form.event_name} onChange={e => set('event_name', e.target.value)}
+              placeholder="e.g. Annual Company Retreat"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Urgency</label>
+            <div className="flex gap-2">
+              {[['normal', 'Normal'], ['high', 'High'], ['urgent', 'Urgent']].map(([v, l]) => (
+                <button key={v} type="button" onClick={() => set('urgency', v)}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    form.urgency === v
+                      ? v === 'urgent' ? 'bg-red-600 text-white border-red-600'
+                        : v === 'high' ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-gray-600 text-white border-gray-600'
+                      : 'border-gray-200 text-gray-600 hover:border-orange-300'
+                  }`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              Notes / reason <span className="text-red-500">*</span>
+            </label>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={3}
+              placeholder="Explain what this is for and why it needs approval…"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={submitting}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors">
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Submit for approval
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 function RejectModal({ approval, orgId, onClose, onDone }) {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -198,6 +319,7 @@ export default function CorporateApprovals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('pending');
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const fetchApprovals = useCallback(async () => {
     if (!orgId) {
@@ -232,11 +354,28 @@ export default function CorporateApprovals() {
   return (
     <div className="p-4 sm:p-6 max-w-4xl">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-extrabold text-gray-900">Approvals Inbox</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Review and action pending approvals from your team.
-        </p>
+      <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
+        <div>
+          <h2 className="text-xl font-extrabold text-gray-900">Approvals</h2>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Review incoming requests or submit your own for approval.
+          </p>
+        </div>
+        <button onClick={() => setShowRequestModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl text-sm transition-colors">
+          <Plus className="w-4 h-4" /> Request approval
+        </button>
+      </div>
+
+      {/* How it works */}
+      <div className="bg-orange-50 border border-orange-100 rounded-2xl px-5 py-4 mb-6">
+        <p className="text-xs font-bold text-orange-700 uppercase tracking-wide mb-2">How approvals work</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-orange-800">
+          <span>① Team member submits a request (PO, invoice, expense)</span>
+          <span>→ ② Approver sees it here</span>
+          <span>→ ③ Approve or reject with notes</span>
+          <span>→ ④ Requester is notified &amp; payment proceeds</span>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -287,13 +426,26 @@ export default function CorporateApprovals() {
       {!loading && !error && (
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <div className="flex flex-col items-center gap-4 py-16 text-center">
               <CheckCircle className="w-10 h-10 text-green-400 opacity-60" />
-              <p className="font-semibold text-gray-600">
-                {activeTab === 'pending'
-                  ? "No pending approvals — you're all caught up!"
-                  : `No ${activeTab} approvals`}
-              </p>
+              <div>
+                <p className="font-semibold text-gray-600">
+                  {activeTab === 'pending'
+                    ? "No pending approvals — you're all caught up!"
+                    : `No ${activeTab} approvals`}
+                </p>
+                {activeTab === 'pending' && (
+                  <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">
+                    When your team submits expenses, POs, or invoice payments they'll appear here for you to action.
+                  </p>
+                )}
+              </div>
+              {activeTab === 'pending' && (
+                <button onClick={() => setShowRequestModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-orange-200 text-orange-700 hover:bg-orange-50 font-semibold rounded-xl text-sm transition-colors">
+                  <Plus className="w-4 h-4" /> Submit a request yourself
+                </button>
+              )}
             </div>
           ) : (
             filtered.map(ap => (
@@ -301,6 +453,14 @@ export default function CorporateApprovals() {
             ))
           )}
         </div>
+      )}
+
+      {showRequestModal && (
+        <RequestApprovalModal
+          orgId={orgId}
+          onClose={() => setShowRequestModal(false)}
+          onDone={() => { setShowRequestModal(false); fetchApprovals(); }}
+        />
       )}
     </div>
   );

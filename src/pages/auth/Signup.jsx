@@ -470,7 +470,7 @@ function StepRole({ data, onNext, onBack }) {
     <div>
       <ProgressBar group={4} />
       <Back onClick={onBack} />
-      <h1 className="text-2xl font-extrabold text-ep-navy mb-1">What brings you to Event Park?</h1>
+      <h1 className="text-2xl font-extrabold text-ep-navy mb-1">What brings you to Eventpark?</h1>
       <p className="text-sm text-gray-400 mb-8">Pick the one that fits best — you can add more later.</p>
       <div className="space-y-2.5 mb-6">
         {roles.map(r => <RadioCard key={r.id} {...r} selected={selected === r.id} onClick={() => pick(r.id, r.disabled)} />)}
