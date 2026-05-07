@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Mail, Shield, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { auth as authApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
 
@@ -59,40 +60,63 @@ function Cooldown({ seconds, onResend }) {
   );
 }
 
+// Normalise phone: accepts 08012345678 or +2348012345678, returns +234...
+function normalisePhone(raw) {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('234')) return '+' + digits;
+  if (digits.startsWith('0')) return '+234' + digits.slice(1);
+  return '+' + digits;
+}
+
 export default function Login({ type = 'personal' }) {
   const isB = type === 'business';
-  const [step, setStep] = useState('email'); // email | otp | password
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState('phone');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const { demoLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleEmailSubmit = async (e) => {
+  const handlePhoneSubmit = async (e) => {
     e?.preventDefault();
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setEmailError('Enter a valid email address'); return;
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      setPhoneError('Enter a valid Nigerian phone number'); return;
     }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-    toast.success('Verification code sent');
-    setStep('otp');
+    try {
+      await authApi.requestOTP(normalisePhone(phone));
+      toast.success('Verification code sent');
+      setStep('otp');
+    } catch (err) {
+      toast.error(err?.message || 'Could not send code. Try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOTPSubmit = async (code) => {
     const val = code || otp;
     if (val.length !== 6) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-    const role = email.includes('planner') ? 'planner' : email.includes('corp') ? 'corporate' : 'diy';
-    demoLogin(role);
-    toast.success('Welcome back!');
-    navigate('/dashboard');
+    try {
+      await login(normalisePhone(phone), val);
+      toast.success('Welcome back!');
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err?.message || 'Invalid code. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await authApi.requestOTP(normalisePhone(phone));
+      toast('New code sent', { icon: '📧' });
+    } catch {
+      toast.error('Could not resend. Try again.');
+    }
   };
 
   return (
@@ -144,22 +168,27 @@ export default function Login({ type = 'personal' }) {
             </Link>
           </div>
 
-          {step === 'email' && (
+          {/* Step: phone */}
+          {step === 'phone' && (
             <div>
               <h1 className="text-3xl font-extrabold text-ep-navy mb-1">Welcome back</h1>
-              <p className="text-gray-400 text-sm mb-8">Enter your email to receive a one-time sign-in code.</p>
+              <p className="text-gray-400 text-sm mb-8">
+                Enter your phone number to receive a one-time sign-in code.
+              </p>
 
-              <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <form onSubmit={handlePhoneSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-ep-navy mb-1.5">Email address</label>
+                  <label className="block text-xs font-semibold text-ep-navy mb-1.5">Phone number</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input type="email" value={email} autoFocus
-                      onChange={e => { setEmail(e.target.value); setEmailError(''); }}
-                      placeholder="you@email.com"
-                      className={`w-full pl-11 pr-4 py-3.5 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white ${emailError ? 'border-red-300' : 'border-gray-200'}`} />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="tel" value={phone} autoFocus
+                      onChange={e => { setPhone(e.target.value); setPhoneError(''); }}
+                      placeholder="08012345678"
+                      className={`w-full pl-11 pr-4 py-3.5 border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white ${phoneError ? 'border-red-300' : 'border-gray-200'}`}
+                    />
                   </div>
-                  {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+                  {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
                 </div>
                 <button type="submit" disabled={loading}
                   className="w-full bg-ep-navy hover:bg-ep-navy-light text-white font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm">
@@ -174,18 +203,19 @@ export default function Login({ type = 'personal' }) {
             </div>
           )}
 
+          {/* Step: otp */}
           {step === 'otp' && (
             <div>
-              <button type="button" onClick={() => setStep('email')}
+              <button type="button" onClick={() => setStep('phone')}
                 className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-6 transition-colors">
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
-              <h1 className="text-3xl font-extrabold text-ep-navy mb-1">Check your email</h1>
+              <h1 className="text-3xl font-extrabold text-ep-navy mb-1">Check your phone</h1>
               <p className="text-gray-400 text-sm mb-2">
-                We sent a 6-digit code to <span className="font-semibold text-ep-navy">{email}</span>
+                We sent a 6-digit code to <span className="font-semibold text-ep-navy">{phone}</span>
               </p>
               <p className="text-xs text-gray-400 mb-8">
-                Didn't receive a code? Check your spam folder or resend below.
+                Didn't get it? Wait a moment then tap Resend below.
               </p>
 
               <div className="space-y-5">
@@ -193,50 +223,10 @@ export default function Login({ type = 'personal' }) {
                 <button type="button" disabled={loading || otp.length !== 6}
                   onClick={() => handleOTPSubmit()}
                   className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Verify & Sign In</span><ArrowRight className="w-4 h-4" /></>}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Verify &amp; Sign In</span><ArrowRight className="w-4 h-4" /></>}
                 </button>
-                <div className="flex items-center justify-between">
-                  <Cooldown seconds={30} onResend={() => toast('New code sent', { icon: '📧' })} />
-                  <button type="button" onClick={() => setStep('password')}
-                    className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                    Use password instead
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 'password' && (
-            <div>
-              <button type="button" onClick={() => setStep('otp')}
-                className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-sm mb-6 transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <h1 className="text-3xl font-extrabold text-ep-navy mb-1">Enter your password</h1>
-              <p className="text-gray-400 text-sm mb-8">
-                Signed in as <span className="font-semibold text-ep-navy">{email}</span>
-              </p>
-              <div className="space-y-4">
-                <div className="relative">
-                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type={showPw ? 'text' : 'password'} value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleOTPSubmit('000000')}
-                    placeholder="Your password"
-                    className="w-full pl-11 pr-11 py-3.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent bg-white" />
-                  <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <button type="button" disabled={loading || !password}
-                  onClick={() => handleOTPSubmit('000000')}
-                  className="w-full bg-ep-navy hover:bg-ep-navy-light text-white font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Sign In</span><ArrowRight className="w-4 h-4" /></>}
-                </button>
-                <div className="flex justify-between text-sm">
-                  <Link to="/forgot-password" className="text-brand-600 hover:underline">Forgot password?</Link>
-                  <button type="button" onClick={() => setStep('otp')} className="text-gray-400 hover:text-gray-600">Use email code instead</button>
+                <div className="flex items-center justify-center">
+                  <Cooldown seconds={30} onResend={handleResend} />
                 </div>
               </div>
             </div>

@@ -5,8 +5,17 @@ import {
   Check, Shield, Building2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { auth as authApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
+
+// Normalise phone: 08012345678 or +2348012345678 → +234...
+function normalisePhone(raw) {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('234')) return '+' + digits;
+  if (digits.startsWith('0')) return '+234' + digits.slice(1);
+  return '+' + digits;
+}
 
 // ─── Step sequencing ──────────────────────────────────────────────────────────
 
@@ -298,11 +307,15 @@ function StepPhone({ data, onNext, onBack }) {
     const clean = phone.replace(/\s/g, '');
     if (!clean.match(/^0[789][01]\d{8}$/)) { setError('Enter a valid Nigerian number (e.g. 08012345678)'); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    toast.success('SMS code sent');
-    toast('Demo mode — enter any 6 digits as OTP', { icon: '🔑', duration: 12000 });
-    onNext({ phone: clean });
+    try {
+      await authApi.requestOTP(normalisePhone(clean));
+      toast.success('SMS code sent');
+      onNext({ phone: clean });
+    } catch (err) {
+      toast.error(err?.message || 'Could not send code. Try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -334,14 +347,28 @@ function StepPhone({ data, onNext, onBack }) {
 function StepPhoneOTP({ data, onNext, onBack }) {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   const submit = async (code) => {
     const val = code || otp;
     if (val.length !== 6) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-    onNext({ phoneVerified: true });
+    try {
+      await login(normalisePhone(data.phone), val);
+      onNext({ phoneVerified: true });
+    } catch (err) {
+      toast.error(err?.message || 'Invalid code. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await authApi.requestOTP(normalisePhone(data.phone));
+      toast('New code sent', { icon: '📱' });
+    } catch {
+      toast.error('Could not resend. Try again.');
+    }
   };
 
   return (
@@ -349,15 +376,14 @@ function StepPhoneOTP({ data, onNext, onBack }) {
       <ProgressBar group={2} />
       <Back onClick={onBack} />
       <h1 className="text-2xl font-extrabold text-ep-navy mb-1">Verify your phone</h1>
-      <p className="text-sm text-gray-400 mb-2">We sent a 6-digit code to <span className="font-semibold text-ep-navy">{data.phone}</span></p>
-      <p className="text-xs text-brand-600 bg-brand-50 rounded-xl px-3 py-2 mb-8">🔑 Demo mode — enter any 6 digits to continue</p>
+      <p className="text-sm text-gray-400 mb-8">We sent a 6-digit code to <span className="font-semibold text-ep-navy">{data.phone}</span></p>
       <div className="space-y-5">
         <OTPBoxes value={otp} onChange={setOtp} onComplete={submit} />
         <Btn onClick={() => submit()} loading={loading} disabled={otp.length !== 6}>
           Verify phone <ArrowRight className="w-4 h-4" />
         </Btn>
         <div className="flex justify-between">
-          <Cooldown seconds={30} onResend={() => toast('New code sent', { icon: '📱' })} />
+          <Cooldown seconds={30} onResend={handleResend} />
           <button type="button" onClick={onBack} className="text-sm text-gray-400 hover:text-gray-600">Wrong number? Edit</button>
         </div>
       </div>
@@ -1119,7 +1145,6 @@ export default function Signup() {
   const [step, setStep] = useState('email');
   const [history, setHistory] = useState(['email']);
   const [data, setData] = useState({});
-  const { demoLogin } = useAuth();
   const navigate = useNavigate();
 
   const update = patch => setData(prev => ({ ...prev, ...patch }));
@@ -1144,14 +1169,12 @@ export default function Signup() {
   };
 
   const finish = (final) => {
-    const roleMap = { diy_personal: 'diy', diy_public: 'diy', event_planner: 'planner', corporate: 'corporate' };
-    demoLogin(roleMap[final.role] || 'diy');
+    // User is already authenticated (login happened at phone OTP step).
+    // Show the completion screen then redirect to dashboard — workspace
+    // type (personal / corporate) is derived automatically from user.role.
     setHistory(h => [...h, 'complete']);
     setStep('complete');
-    setTimeout(() => {
-      const routes = { diy: '/dashboard', planner: '/planner', corporate: '/corporate' };
-      navigate(routes[roleMap[final.role]] || '/dashboard');
-    }, 2000);
+    setTimeout(() => navigate('/dashboard'), 2000);
   };
 
   const panel = PANELS[data.role] || PANELS.default;
