@@ -1,3 +1,7 @@
+// DEPRECATED: This component is no longer mounted.
+// /corporate now redirects to /dashboard which renders corporate pages from the corporate/ folder.
+// This file is kept to avoid import errors until cleaned up.
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

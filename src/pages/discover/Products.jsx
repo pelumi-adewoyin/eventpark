@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Star, ShoppingCart, Sparkles, Send, X } from 'lucide-react';
-import { sampleProducts } from '../../data/sampleData';
+import { Search, Star, ShoppingCart, ShoppingBag, Sparkles, Send, X } from 'lucide-react';
+import { discover } from '../../lib/api';
 
 const categories = ['All', 'Cakes & Desserts', 'Furniture & Decor', 'Flowers & Decor', 'Photography', 'Entertainment', 'Catering & Drinks', 'Fashion & Fabric'];
 
@@ -24,6 +24,8 @@ export default function DiscoverProducts() {
   const [input, setInput] = useState('');
   const [flowStep, setFlowStep] = useState(0);
   const [showBuddy, setShowBuddy] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -38,6 +40,20 @@ export default function DiscoverProducts() {
     }, 800);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const params = {};
+    if (selectedCategory !== 'All') params.category = selectedCategory;
+    if (search.trim()) params.search = search.trim();
+
+    setLoading(true);
+    discover.products(params)
+      .then(data => {
+        setProducts(Array.isArray(data) ? data : (data.products ?? []));
+      })
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, [selectedCategory, search]);
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -68,12 +84,6 @@ export default function DiscoverProducts() {
       return [...prev, { ...product, qty: 1 }];
     });
   };
-
-  const filtered = sampleProducts.filter(p => {
-    const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
 
   const cartCount = cart.reduce((a, b) => a + b.qty, 0);
 
@@ -121,7 +131,9 @@ export default function DiscoverProducts() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <p className="text-sm text-gray-400 font-medium mb-6">{filtered.length} products found</p>
+        {!loading && products.length > 0 && (
+          <p className="text-sm text-gray-400 font-medium mb-6">{products.length} product{products.length !== 1 ? 's' : ''} found</p>
+        )}
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Event Buddy Chat */}
@@ -179,53 +191,90 @@ export default function DiscoverProducts() {
 
           {/* Products Grid */}
           <div className={showBuddy ? 'lg:col-span-3' : 'lg:col-span-4'}>
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {filtered.map(product => (
-                <Link key={product.id} to={`/discover/products/${product.id}`}
-                  className="group bg-white rounded-3xl overflow-hidden border border-gray-100 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-50 transition-all duration-300">
-                  <div className="relative h-44 overflow-hidden bg-ep-blue-light">
-                    <img src={product.image} alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    {!product.inStock && (
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="bg-white text-ep-navy font-bold text-xs px-3 py-1 rounded-full">Out of Stock</span>
+            {/* Loading skeletons */}
+            {loading && (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-3xl overflow-hidden border border-gray-100 animate-pulse">
+                    <div className="h-44 bg-gray-200" />
+                    <div className="p-5">
+                      <div className="h-3 bg-gray-100 rounded w-1/3 mb-2" />
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
+                      <div className="h-3 bg-gray-100 rounded w-1/4 mb-4" />
+                      <div className="flex justify-between pt-3 border-t border-gray-50">
+                        <div className="h-4 bg-gray-200 rounded w-20" />
+                        <div className="h-7 bg-gray-200 rounded w-24" />
                       </div>
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    <div className="text-xs text-brand-600 font-semibold mb-1">{product.vendor}</div>
-                    <h3 className="font-bold text-ep-navy text-sm leading-snug mb-2 line-clamp-2">{product.name}</h3>
-
-                    <div className="flex items-center gap-1 mb-4">
-                      <Star className="w-3.5 h-3.5 fill-ep-orange text-ep-orange" />
-                      <span className="text-xs font-bold text-ep-navy">{product.rating}</span>
-                      <span className="text-xs text-gray-400">({product.reviews})</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-50">
-                      <span className="font-extrabold text-ep-navy text-sm">₦{product.price.toLocaleString()}</span>
-                      <button
-                        onClick={e => { e.preventDefault(); addToCart(product); }}
-                        disabled={!product.inStock}
-                        className={`text-xs font-bold px-4 py-1.5 rounded-xl transition-all ${
-                          product.inStock
-                            ? 'bg-brand-600 text-white hover:bg-brand-500'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}>
-                        Add to Cart
-                      </button>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty state — products API is a stub, this is the expected view */}
+            {!loading && products.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <ShoppingBag className="w-14 h-14 text-gray-200 mb-4" />
+                <h3 className="text-lg font-bold text-gray-700 mb-2">Products from Event Park vendors</h3>
+                <p className="text-sm text-gray-400 max-w-sm mb-6">
+                  Browse cakes, flowers, gifts, branded merchandise and more — coming to EventPark.
+                </p>
+                <Link
+                  to="/discover/vendors"
+                  className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+                  Browse vendors instead →
                 </Link>
-              ))}
-            </div>
+              </div>
+            )}
 
-            {filtered.length === 0 && (
-              <div className="text-center py-24">
-                <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-200" />
-                <p className="font-bold text-gray-400">No products found</p>
-                <p className="text-sm text-gray-300 mt-1">Try a different category or search term</p>
+            {/* Product cards */}
+            {!loading && products.length > 0 && (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                {products.map(product => (
+                  <Link key={product.id} to={`/discover/products/${product.id}`}
+                    className="group bg-white rounded-3xl overflow-hidden border border-gray-100 hover:border-brand-200 hover:shadow-xl hover:shadow-brand-50 transition-all duration-300">
+                    <div className="relative h-44 overflow-hidden bg-ep-blue-light">
+                      {product.image && (
+                        <img src={product.image} alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      )}
+                      {!product.inStock && product.inStock !== undefined && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="bg-white text-ep-navy font-bold text-xs px-3 py-1 rounded-full">Out of Stock</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5">
+                      <div className="text-xs text-brand-600 font-semibold mb-1">{product.vendor}</div>
+                      <h3 className="font-bold text-ep-navy text-sm leading-snug mb-2 line-clamp-2">{product.name}</h3>
+
+                      <div className="flex items-center gap-1 mb-4">
+                        <Star className="w-3.5 h-3.5 fill-ep-orange text-ep-orange" />
+                        <span className="text-xs font-bold text-ep-navy">{product.rating ?? '—'}</span>
+                        {product.reviews != null && (
+                          <span className="text-xs text-gray-400">({product.reviews})</span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                        <span className="font-extrabold text-ep-navy text-sm">
+                          {product.price != null ? `₦${product.price.toLocaleString()}` : 'Price on request'}
+                        </span>
+                        <button
+                          onClick={e => { e.preventDefault(); addToCart(product); }}
+                          disabled={product.inStock === false}
+                          className={`text-xs font-bold px-4 py-1.5 rounded-xl transition-all ${
+                            product.inStock === false
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-brand-600 text-white hover:bg-brand-500'
+                          }`}>
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

@@ -1,3 +1,7 @@
+// DEPRECATED: Do not use sampleData in new code. All data must come from the API.
+// This file is retained only to prevent import errors during the transition period.
+// It will be emptied in a future cleanup pass once all imports have been removed.
+
 export const sampleEvents = [
   {
     id: 1,

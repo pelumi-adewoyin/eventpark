@@ -1,14 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Star, MapPin, CheckCircle, Briefcase, Phone, Mail, Calendar } from 'lucide-react';
-import { sampleVendors } from '../../data/sampleData';
+import { vendorDiscover } from '../../lib/api';
 
 export default function VendorDetail() {
   const { id } = useParams();
-  const vendor = sampleVendors.find(v => v.id === parseInt(id));
+  const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState('about');
 
-  if (!vendor) {
+  useEffect(() => {
+    setLoading(true);
+    setNotFound(false);
+    vendorDiscover.get(id)
+      .then(data => {
+        if (!data || !data.id) {
+          setNotFound(true);
+        } else {
+          setVendor(data);
+        }
+      })
+      .catch(err => {
+        if (err?.status === 404) {
+          setNotFound(true);
+        } else {
+          setNotFound(true);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-20 animate-pulse">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="h-4 bg-gray-200 rounded w-28 mb-4" />
+        </div>
+        <div className="h-56 sm:h-72 bg-gray-200" />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-md -mt-10 relative z-10 p-6 mb-6">
+            <div className="flex gap-4 items-center">
+              <div className="w-20 h-20 rounded-2xl bg-gray-200 flex-shrink-0" />
+              <div className="flex-grow space-y-2">
+                <div className="h-5 bg-gray-200 rounded w-48" />
+                <div className="h-3 bg-gray-100 rounded w-32" />
+                <div className="h-3 bg-gray-100 rounded w-56" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !vendor) {
     return (
       <div className="min-h-screen pt-32 flex items-center justify-center">
         <div className="text-center">
@@ -30,7 +76,9 @@ export default function VendorDetail() {
 
       {/* Cover */}
       <div className="relative h-56 sm:h-72 overflow-hidden bg-gray-200">
-        <img src={vendor.coverImage} alt={vendor.name} className="w-full h-full object-cover" />
+        {vendor.coverImage && (
+          <img src={vendor.coverImage} alt={vendor.name} className="w-full h-full object-cover" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
@@ -38,7 +86,13 @@ export default function VendorDetail() {
         {/* Profile card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-md -mt-10 relative z-10 p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <img src={vendor.image} alt={vendor.name} className="w-20 h-20 rounded-2xl border-2 border-white shadow object-cover" />
+            {vendor.image ? (
+              <img src={vendor.image} alt={vendor.name} className="w-20 h-20 rounded-2xl border-2 border-white shadow object-cover" />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl border-2 border-white bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-2xl shadow">
+                {vendor.name?.[0] ?? 'V'}
+              </div>
+            )}
             <div className="flex-grow">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-extrabold text-gray-900">{vendor.name}</h1>
@@ -51,12 +105,18 @@ export default function VendorDetail() {
               </div>
               <div className="text-sm text-brand-600 font-medium">{vendor.category}</div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
-                <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{vendor.location}</span>
-                <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{vendor.completedJobs} jobs completed</span>
-                <span className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                  {vendor.rating} ({vendor.reviews} reviews)
-                </span>
+                {vendor.location && (
+                  <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{vendor.location}</span>
+                )}
+                {vendor.completedJobs != null && (
+                  <span className="flex items-center gap-1"><Briefcase className="w-3.5 h-3.5" />{vendor.completedJobs} jobs completed</span>
+                )}
+                {vendor.rating != null && (
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                    {vendor.rating}{vendor.reviews != null ? ` (${vendor.reviews} reviews)` : ''}
+                  </span>
+                )}
               </div>
             </div>
             <Link
@@ -113,35 +173,45 @@ export default function VendorDetail() {
 
         {activeTab === 'portfolio' && (
           <div className="mb-8">
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {vendor.portfolios.map((port, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-md transition">
-                  <div className="h-48 overflow-hidden">
-                    <img src={port.image} alt={port.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            {vendor.portfolios && vendor.portfolios.length > 0 ? (
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {vendor.portfolios.map((port, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-md transition">
+                    <div className="h-48 overflow-hidden">
+                      <img src={port.image} alt={port.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-800 text-sm">{port.name}</h3>
+                    </div>
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-800 text-sm">{port.name}</h3>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+                <p className="text-gray-400 font-medium">No portfolio items yet.</p>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'services' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
             <h2 className="font-bold text-gray-900 mb-4">Services Offered</h2>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {vendor.services.map(service => (
-                <div key={service} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl">
-                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-gray-900 text-sm">{service}</div>
-                    <Link to="/signup" className="text-xs text-brand-600 hover:underline">Get a quote →</Link>
+            {vendor.services && vendor.services.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {vendor.services.map(service => (
+                  <div key={service} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-semibold text-gray-900 text-sm">{service}</div>
+                      <Link to="/signup" className="text-xs text-brand-600 hover:underline">Get a quote →</Link>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400 text-sm">No services listed yet.</p>
+            )}
           </div>
         )}
       </div>
