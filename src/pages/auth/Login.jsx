@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Phone, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { auth as authApi, users as usersApi } from '../../lib/api';
+import { auth as authApi, users as usersApi, orgs as orgsApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
 
@@ -109,12 +109,15 @@ export default function Login({ type = 'personal' }) {
       const resolvedPhone = isDemo ? DEMO_PHONE : normalisePhone(phone);
       const rawUser = await login(resolvedPhone, val);
 
-      // Business login: ensure the user has a corporate role.
-      // New users arrive with role=null; set it now so the corporate
-      // dashboard is shown immediately without a separate onboarding step.
+      // Business login: ensure the user has a corporate role + an org.
+      // New users arrive with role=null; set both now so the corporate
+      // dashboard loads without a separate onboarding step.
       if (isB && !rawUser?.role) {
         await usersApi.completeOnboarding({ role: 'corporate' });
-        await refreshUser(); // re-fetches /users/me and updates AuthContext
+        // POST /orgs creates the org AND the org_members row that
+        // GET /orgs/me requires. Fall through silently if it already exists.
+        try { await orgsApi.create({ name: 'My Company' }); } catch {}
+        await refreshUser();
       }
 
       toast.success(isDemo ? 'Demo mode — welcome!' : 'Welcome back!');

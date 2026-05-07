@@ -5,7 +5,7 @@ import {
   Check, Shield, Building2, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { auth as authApi } from '../../lib/api';
+import { auth as authApi, users as usersApi, orgs as orgsApi } from '../../lib/api';
 import { EventParkLogo } from '../../components/Logo';
 import toast from 'react-hot-toast';
 
@@ -1174,7 +1174,7 @@ export default function Signup() {
   const [history, setHistory] = useState(['email']);
   const [data, setData] = useState({});
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, refreshUser } = useAuth();
 
   const handleDemo = async () => {
     await authApi.requestOTP(DEMO_PHONE);
@@ -1206,12 +1206,46 @@ export default function Signup() {
     setStep(h[h.length - 1]);
   };
 
-  const finish = (final) => {
-    // User is already authenticated (login happened at phone OTP step).
-    // Show the completion screen then redirect to dashboard — workspace
-    // type (personal / corporate) is derived automatically from user.role.
+  const finish = async (final) => {
     setHistory(h => [...h, 'complete']);
     setStep('complete');
+
+    // Map signup persona → backend role
+    const roleMap = {
+      diy_personal: 'diy',
+      diy_public:   'diy',
+      event_planner: 'planner',
+      corporate:     'corporate',
+    };
+    const backendRole = roleMap[final.role];
+
+    try {
+      if (backendRole) {
+        const fullName = [final.firstName, final.lastName].filter(Boolean).join(' ') || undefined;
+        await usersApi.completeOnboarding({
+          role:      backendRole,
+          full_name: fullName,
+          email:     final.email || undefined,
+          // Corporate-specific (passed through to org creation on backend)
+          org_name:  final.company_name || undefined,
+          rc_number: final.rc_number    || undefined,
+          industry:  final.industry     || undefined,
+        });
+      }
+
+      // For corporate: also call POST /orgs so an org_members row is
+      // created — this is what GET /orgs/me actually queries.
+      if (backendRole === 'corporate') {
+        const orgName = final.company_name || 'My Company';
+        try { await orgsApi.create({ name: orgName, industry: final.industry || undefined }); } catch {}
+      }
+
+      await refreshUser();
+    } catch (err) {
+      // Non-fatal — user is authenticated; log and continue
+      console.error('Onboarding save error:', err);
+    }
+
     setTimeout(() => navigate('/dashboard'), 2000);
   };
 
