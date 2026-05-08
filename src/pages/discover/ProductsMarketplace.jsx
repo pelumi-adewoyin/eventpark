@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, ShoppingCart, Heart, Star, Package, ChevronRight, X, Plus, Minus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, ShoppingCart, Heart, Star, Package, ChevronRight, X, Plus, Minus, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { discover, wishlist } from '../../lib/api';
+import { discover, wishlist, ordersApi } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -64,7 +64,8 @@ const CATEGORY_GRADIENTS = [
   'from-red-400 to-pink-500',
 ];
 
-const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`;
+// Prices stored as kobo (integer × 100) — divide for display
+const fmt = (kobo) => `₦${Number((kobo || 0) / 100).toLocaleString('en-NG')}`;
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
@@ -127,9 +128,138 @@ function ProductCard({ product, index, onAddToCart, savedIds, onToggleSave }) {
   );
 }
 
+// ─── Checkout Modal ───────────────────────────────────────────────────────────
+
+function CheckoutModal({ cartItems, onClose, onSuccess, user, navigate }) {
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const subtotal = cartItems.reduce((sum, { product, quantity }) => sum + product.price * quantity, 0);
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast('Please log in to place an order', { icon: '🔐' });
+      navigate('/login?next=/discover/products');
+      return;
+    }
+    if (!address.trim()) {
+      toast.error('Please enter a delivery address');
+      return;
+    }
+
+    // Group items by vendor
+    const byVendor = {};
+    for (const { product, quantity } of cartItems) {
+      const vid = product.vendor_id;
+      if (!byVendor[vid]) byVendor[vid] = [];
+      byVendor[vid].push({ product_id: product.id, quantity });
+    }
+
+    setSubmitting(true);
+    try {
+      const vendorIds = Object.keys(byVendor);
+      await Promise.all(vendorIds.map(vid =>
+        ordersApi.place({
+          vendor_id: vid,
+          items: byVendor[vid],
+          delivery_address: address.trim(),
+          notes: notes.trim() || undefined,
+        })
+      ));
+      setDone(true);
+      onSuccess();
+    } catch (err) {
+      toast.error(err.message || 'Failed to place order');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+          {done ? (
+            <div className="p-8 text-center">
+              <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-4" />
+              <h2 className="text-xl font-extrabold text-gray-900 mb-2">Order placed!</h2>
+              <p className="text-sm text-gray-500 mb-6">The vendor will confirm and reach out with delivery details.</p>
+              <button onClick={onClose} className="px-6 py-2.5 bg-orange-600 text-white text-sm font-bold rounded-xl hover:bg-orange-700 transition-colors">
+                Continue shopping
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h2 className="text-base font-bold text-gray-900">Checkout</h2>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="px-5 py-4 space-y-4">
+                {/* Order summary */}
+                <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+                  {cartItems.map(({ product, quantity }) => (
+                    <div key={product.id} className="flex justify-between text-sm">
+                      <span className="text-gray-700 truncate max-w-[200px]">{product.name} × {quantity}</span>
+                      <span className="font-semibold text-gray-900 flex-shrink-0 ml-2">{fmt(product.price * quantity)}</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between text-sm font-bold">
+                    <span>Total</span>
+                    <span className="text-orange-600">{fmt(subtotal)}</span>
+                  </div>
+                </div>
+
+                {/* Delivery address */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                    <MapPin className="w-3.5 h-3.5 inline mr-1" />
+                    Delivery address *
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="Enter your full delivery address…"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                  />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Order notes (optional)</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    placeholder="Any special instructions for the vendor…"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                  />
+                </div>
+              </div>
+              <div className="px-5 pb-5">
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing order…</> : `Place order · ${fmt(subtotal)}`}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Cart Drawer ──────────────────────────────────────────────────────────────
 
-function CartDrawer({ cartItems, onClose, onUpdateQty, onRemove, onClear }) {
+function CartDrawer({ cartItems, onClose, onUpdateQty, onRemove, onClear, onCheckout }) {
   const subtotal = cartItems.reduce((sum, { product, quantity }) => sum + product.price * quantity, 0);
 
   return (
@@ -224,10 +354,10 @@ function CartDrawer({ cartItems, onClose, onUpdateQty, onRemove, onClear }) {
               <span className="text-base font-extrabold text-gray-900">{fmt(subtotal)}</span>
             </div>
             <button
-              onClick={() => toast('Checkout coming soon — contact vendor directly for now', { icon: '🛒' })}
+              onClick={onCheckout}
               className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors"
             >
-              Checkout
+              Checkout · {fmt(subtotal)}
             </button>
           </div>
         )}
@@ -276,6 +406,7 @@ function EmptyState() {
 
 export default function ProductsMarketplace() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -287,6 +418,7 @@ export default function ProductsMarketplace() {
 
   const [cartItems, setCartItems] = useState([]); // [{ product, quantity }]
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const [savedIds, setSavedIds] = useState(new Set());
 
@@ -531,6 +663,18 @@ export default function ProductsMarketplace() {
           onUpdateQty={updateCartQty}
           onRemove={removeFromCart}
           onClear={clearCart}
+          onCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
+        />
+      )}
+
+      {/* ── Checkout Modal ───────────────────────────────────────────────────── */}
+      {checkoutOpen && (
+        <CheckoutModal
+          cartItems={cartItems}
+          user={user}
+          navigate={navigate}
+          onClose={() => setCheckoutOpen(false)}
+          onSuccess={() => { clearCart(); }}
         />
       )}
     </div>

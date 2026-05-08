@@ -338,6 +338,13 @@ export const vendorChat = {
   sendMessage: (chatId, body) => request('POST', `/vendor-chats/${chatId}/messages`, body),
 };
 
+// ─── Orders (customer) ────────────────────────────────────────────────────────
+export const ordersApi = {
+  place: (body) => request('POST', '/orders', body),
+  list: () => request('GET', '/orders'),
+  get: (id) => request('GET', `/orders/${id}`),
+};
+
 // ─── Wishlist ─────────────────────────────────────────────────────────────────
 export const wishlist = {
   list: () => request('GET', '/wishlists'),
